@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,53 +15,64 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useApiKey } from "@/hooks/useApiKey";
+import { useAzureDevOpsConfig, type AzureDevOpsConfig } from "@/hooks/useApiKey";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
-import { KeyRound, CheckCircle } from "lucide-react";
+import { KeyRound, CheckCircle, Building, FolderGit2 } from "lucide-react";
 
 const formSchema = z.object({
-  apiKey: z.string().min(1, "API Key cannot be empty."),
+  pat: z.string().min(1, "Personal Access Token (PAT) cannot be empty."),
+  organization: z.string().min(1, "Organization name cannot be empty."),
+  project: z.string().min(1, "Project name cannot be empty."),
 });
 
 type ConfigurationFormValues = z.infer<typeof formSchema>;
 
 export function ConfigurationForm() {
-  const { apiKey, saveApiKey, clearApiKey, isKeyLoaded } = useApiKey();
+  const { config, saveAzureDevOpsConfig, clearAzureDevOpsConfig, isConfigLoaded } = useAzureDevOpsConfig();
   const { toast } = useToast();
 
   const form = useForm<ConfigurationFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      apiKey: "",
+      pat: "",
+      organization: "",
+      project: "",
     },
   });
 
   useEffect(() => {
-    if (isKeyLoaded && apiKey) {
-      form.setValue("apiKey", apiKey);
+    if (isConfigLoaded && config.pat) {
+      form.setValue("pat", config.pat);
+      form.setValue("organization", config.organization || "");
+      form.setValue("project", config.project || "");
     }
-  }, [apiKey, form, isKeyLoaded]);
+  }, [config, form, isConfigLoaded]);
 
   function onSubmit(values: ConfigurationFormValues) {
-    saveApiKey(values.apiKey);
+    const newConfig: AzureDevOpsConfig = {
+        pat: values.pat,
+        organization: values.organization,
+        project: values.project,
+    };
+    saveAzureDevOpsConfig(newConfig);
     toast({
-      title: "API Key Saved",
-      description: "Your Azure DevOps API Key has been saved successfully.",
+      title: "Configuration Saved",
+      description: "Your Azure DevOps configuration has been saved successfully.",
       action: <CheckCircle className="text-green-500" />,
     });
   }
 
-  function handleClearApiKey() {
-    clearApiKey();
-    form.reset({ apiKey: "" });
+  function handleClearConfig() {
+    clearAzureDevOpsConfig();
+    form.reset({ pat: "", organization: "", project: "" });
     toast({
-        title: "API Key Cleared",
-        description: "Your Azure DevOps API Key has been cleared.",
+        title: "Configuration Cleared",
+        description: "Your Azure DevOps configuration has been cleared.",
     });
   }
 
-  if (!isKeyLoaded) {
+  if (!isConfigLoaded) {
     return <p>Loading configuration...</p>;
   }
 
@@ -69,27 +81,57 @@ export function ConfigurationForm() {
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <FormField
           control={form.control}
-          name="apiKey"
+          name="pat"
           render={({ field }) => (
             <FormItem>
               <FormLabel className="flex items-center gap-2">
-                <KeyRound className="h-5 w-5 text-primary" /> Azure DevOps API Key
+                <KeyRound className="h-5 w-5 text-primary" /> Azure DevOps Personal Access Token (PAT)
               </FormLabel>
               <FormControl>
-                <Input type="password" placeholder="Enter your Azure DevOps API Key" {...field} />
+                <Input type="password" placeholder="Enter your Azure DevOps PAT" {...field} />
               </FormControl>
               <FormDescription>
-                This key will be stored locally in your browser.
+                This token will be stored locally in your browser. Ensure it has Work Item read/write permissions.
               </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
+        <FormField
+          control={form.control}
+          name="organization"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="flex items-center gap-2">
+                <Building className="h-5 w-5 text-primary" /> Azure DevOps Organization
+              </FormLabel>
+              <FormControl>
+                <Input placeholder="Enter your Azure DevOps Organization name" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="project"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel className="flex items-center gap-2">
+                <FolderGit2 className="h-5 w-5 text-primary" /> Azure DevOps Project
+              </FormLabel>
+              <FormControl>
+                <Input placeholder="Enter your Azure DevOps Project name" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
         <div className="flex flex-col sm:flex-row gap-2">
-            <Button type="submit" className="w-full sm:w-auto">Save API Key</Button>
-            {apiKey && (
-                <Button type="button" variant="outline" onClick={handleClearApiKey} className="w-full sm:w-auto">
-                    Clear API Key
+            <Button type="submit" className="w-full sm:w-auto">Save Configuration</Button>
+            {(config.pat || config.organization || config.project) && (
+                <Button type="button" variant="outline" onClick={handleClearConfig} className="w-full sm:w-auto">
+                    Clear Configuration
                 </Button>
             )}
         </div>
