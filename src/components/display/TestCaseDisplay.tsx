@@ -24,6 +24,10 @@ export function TestCaseDisplay({ testCases }: TestCaseDisplayProps) {
   const [isPushing, setIsPushing] = useState(false);
 
   const formatStepsToHtml = (steps: Array<{ action: string; expectedResult: string }>): string => {
+    if (!steps || steps.length === 0) {
+      return '<p>No se proporcionaron pasos detallados.</p>';
+    }
+
     let html = '<table style="border-collapse: collapse; width: 100%;" border="1"><thead><tr>';
     html += '<th style="background-color: #f2f2f2; padding: 8px; text-align: left;">Paso</th>';
     html += '<th style="background-color: #f2f2f2; padding: 8px; text-align: left;">Acción</th>';
@@ -31,10 +35,13 @@ export function TestCaseDisplay({ testCases }: TestCaseDisplayProps) {
     html += '</tr></thead><tbody>';
 
     steps.forEach((step, index) => {
+      const actionText = step.action && step.action.trim() !== "" ? step.action.replace(/\n/g, '<br />') : '<i>(sin acción especificada)</i>';
+      const expectedResultText = step.expectedResult && step.expectedResult.trim() !== "" ? step.expectedResult.replace(/\n/g, '<br />') : '<i>(sin resultado esperado especificado)</i>';
+      
       html += '<tr>';
       html += `<td style="padding: 8px; border: 1px solid #ddd;">${index + 1}</td>`;
-      html += `<td style="padding: 8px; border: 1px solid #ddd;">${step.action.replace(/\n/g, '<br />')}</td>`;
-      html += `<td style="padding: 8px; border: 1px solid #ddd;">${step.expectedResult.replace(/\n/g, '<br />')}</td>`;
+      html += `<td style="padding: 8px; border: 1px solid #ddd;">${actionText}</td>`;
+      html += `<td style="padding: 8px; border: 1px solid #ddd;">${expectedResultText}</td>`;
       html += '</tr>';
     });
 
@@ -87,7 +94,10 @@ export function TestCaseDisplay({ testCases }: TestCaseDisplayProps) {
     for (const tc of testCases) {
       const apiUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/$Test Case?api-version=7.1-preview.3`;
       
+      // Logging los datos del TC y el HTML de los pasos
+      console.log(`Datos del TC a enviar para "${tc.title}":`, JSON.stringify(tc, null, 2));
       const htmlReproSteps = formatStepsToHtml(tc.steps);
+      console.log(`HTML Repro Steps para "${tc.title}":`, htmlReproSteps);
 
       const body = [
         {
@@ -204,13 +214,18 @@ export function TestCaseDisplay({ testCases }: TestCaseDisplayProps) {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {tc.steps.map((step, stepIndex) => (
+                  {tc.steps && tc.steps.map((step, stepIndex) => (
                     <TableRow key={stepIndex}>
                       <TableCell className="font-medium text-center">{stepIndex + 1}</TableCell>
                       <TableCell className="whitespace-pre-line">{step.action}</TableCell>
                       <TableCell className="whitespace-pre-line">{step.expectedResult}</TableCell>
                     </TableRow>
                   ))}
+                  {(!tc.steps || tc.steps.length === 0) && (
+                    <TableRow>
+                      <TableCell colSpan={3} className="text-center text-muted-foreground">No hay pasos detallados para este caso de prueba.</TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -261,3 +276,4 @@ export function TestCaseDisplay({ testCases }: TestCaseDisplayProps) {
     </Card>
   );
 }
+
