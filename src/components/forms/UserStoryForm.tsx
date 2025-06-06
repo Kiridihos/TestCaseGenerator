@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,7 +23,7 @@ import { Loader2, FileText } from "lucide-react";
 const formSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters.").max(100, "Title must be at most 100 characters."),
   description: z.string().min(10, "Description must be at least 10 characters.").max(1000, "Description must be at most 1000 characters."),
-  acceptanceCriteria: z.string().min(10, "Acceptance Criteria must be at least 10 characters.").max(2000, "Acceptance Criteria must be at most 2000 characters."),
+  acceptanceCriteria: z.string().min(10, "Acceptance Criteria must be at least 10 characters.").max(5000, "Acceptance Criteria must be at most 5000 characters."),
 });
 
 type UserStoryFormValues = z.infer<typeof formSchema>;
