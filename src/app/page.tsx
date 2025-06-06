@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -21,24 +22,24 @@ export default function HomePage() {
           isLoading={isLoading} 
         />
         
-        {(isLoading || testCasesOutput) && <Separator className="my-8" />}
+        {(isLoading || (testCasesOutput && testCasesOutput.testCases && testCasesOutput.testCases.length > 0)) && <Separator className="my-8" />}
 
         {isLoading && (
           <div className="flex flex-col items-center justify-center text-center py-10 bg-card p-6 rounded-lg shadow-md">
             <Loader2 className="h-12 w-12 text-primary animate-spin mb-4" />
-            <p className="text-xl font-semibold text-primary font-headline">Generating Test Cases</p>
-            <p className="text-muted-foreground">Please wait while the AI crafts your test cases...</p>
+            <p className="text-xl font-semibold text-primary font-headline">Generando Casos de Prueba</p>
+            <p className="text-muted-foreground">Por favor espera mientras la IA crea tus casos de prueba...</p>
           </div>
         )}
         
-        {testCasesOutput && testCasesOutput.testCases.length > 0 && !isLoading && (
+        {testCasesOutput && testCasesOutput.testCases && testCasesOutput.testCases.length > 0 && !isLoading && (
           <TestCaseDisplay testCases={testCasesOutput.testCases} />
         )}
         
-        {testCasesOutput && testCasesOutput.testCases.length === 0 && !isLoading && (
+        {testCasesOutput && (!testCasesOutput.testCases || testCasesOutput.testCases.length === 0) && !isLoading && (
             <div className="text-center py-10 bg-card p-6 rounded-lg shadow-md">
-                <p className="text-lg font-medium">No Test Cases Generated</p>
-                <p className="text-muted-foreground">The AI couldn't generate test cases based on the provided input. Please try refining your user story details, especially the acceptance criteria, and try again.</p>
+                <p className="text-lg font-medium">No se Generaron Casos de Prueba</p>
+                <p className="text-muted-foreground">La IA no pudo generar casos de prueba con la información proporcionada. Por favor, intenta refinar los detalles de tu historia de usuario, especialmente los criterios de aceptación, y vuelve a intentarlo.</p>
             </div>
         )}
       </div>
