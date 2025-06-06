@@ -23,7 +23,7 @@ export type GenerateTestCasesInput = z.infer<typeof GenerateTestCasesInputSchema
 const GenerateTestCasesOutputSchema = z.object({
   testCases: z
     .array(z.string())
-    .describe('An array of test cases generated from the user story.'),
+    .describe('An array of test cases generated from the user story, in Spanish.'),
 });
 export type GenerateTestCasesOutput = z.infer<typeof GenerateTestCasesOutputSchema>;
 
@@ -37,7 +37,7 @@ const prompt = ai.definePrompt({
   name: 'generateTestCasesPrompt',
   input: {schema: GenerateTestCasesInputSchema},
   output: {schema: GenerateTestCasesOutputSchema},
-  prompt: `You are an expert test case generator. Based on the user story details provided, generate a comprehensive set of test cases to ensure that the acceptance criteria are met.  Each test case must be detailed enough for a QA engineer to implement it, including steps and expected results.\n\nUser Story Title: {{{title}}}\nUser Story Description: {{{description}}}\nAcceptance Criteria: {{{acceptanceCriteria}}}\n\nTest Cases:`,
+  prompt: `Eres un experto generador de casos de prueba. Basándote en los detalles de la historia de usuario proporcionados, genera un conjunto completo de casos de prueba EN ESPAÑOL para asegurar que se cumplan los criterios de aceptación. Cada caso de prueba debe ser lo suficientemente detallado para que un ingeniero de QA pueda implementarlo, incluyendo pasos y resultados esperados. Los casos de prueba deben estar exclusivamente en idioma ESPAÑOL.\n\nTítulo de la Historia de Usuario: {{{title}}}\nDescripción de la Historia de Usuario: {{{description}}}\nCriterios de Aceptación: {{{acceptanceCriteria}}}\n\nCasos de Prueba (en ESPAÑOL):`,
 });
 
 const generateTestCasesFlow = ai.defineFlow(
