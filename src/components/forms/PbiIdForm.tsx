@@ -23,6 +23,7 @@ import { Loader2, Search, AlertTriangle, Wand2, Pencil, Check } from "lucide-rea
 import Link from "next/link";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 const formSchema = z.object({
   pbiId: z.string().regex(/^\d+$/, "PBI ID must be a number.").min(1, "PBI ID cannot be empty."),
@@ -118,12 +119,12 @@ export function PbiIdForm({ setTestCasesOutput, setIsLoading, isLoading, setPbiI
         }
         return details;
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error fetching PBI details:", error);
         toast({
             variant: "destructive",
             title: "Error al Obtener PBI",
-            description: `No se pudo obtener el PBI ${id}. Verifica el ID y tu configuración.`,
+            description: `No se pudo obtener el PBI ${id}. Verifica el ID y tu configuración. ${error.message}`,
         });
         return null;
     }
@@ -196,56 +197,74 @@ export function PbiIdForm({ setTestCasesOutput, setIsLoading, isLoading, setPbiI
     }
 
   const isConfigMissing = !devOpsConfig.pat || !devOpsConfig.organization || !devOpsConfig.project;
-  const readOnlyClasses = "read-only:border-0 read-only:bg-transparent read-only:shadow-none read-only:focus-visible:ring-0 read-only:focus-visible:ring-offset-0 read-only:cursor-default";
-
+  
   if (fetchedData) {
     return (
-        <div className="space-y-6">
-            <div className="flex justify-end">
-                 <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)}>
-                    {isEditing ? <Check className="mr-2 h-4 w-4" /> : <Pencil className="mr-2 h-4 w-4" />}
-                    {isEditing ? 'Finalizar Edición' : 'Editar Datos'}
+        <Card className="w-full shadow-lg border">
+            <CardHeader>
+                <div className="flex justify-between items-start">
+                    <div>
+                        <CardTitle>Información del PBI: {pbiId}</CardTitle>
+                        <CardDescription>
+                            {isEditing 
+                                ? "Modifica los detalles obtenidos de Azure DevOps." 
+                                : "Revisa la información. Haz clic en 'Editar' para modificarla."}
+                        </CardDescription>
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)}>
+                        {isEditing ? <Check className="mr-2 h-4 w-4" /> : <Pencil className="mr-2 h-4 w-4" />}
+                        {isEditing ? 'Finalizar Edición' : 'Editar Datos'}
+                    </Button>
+                </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <div className="space-y-2">
+                    <Label htmlFor="pbiTitle" className="font-semibold">Título</Label>
+                    {isEditing ? (
+                        <Input 
+                            id="pbiTitle" 
+                            value={fetchedData.title} 
+                            onChange={(e) => handleFetchedDataChange('title', e.target.value)} 
+                        />
+                    ) : (
+                        <p className="text-sm p-3 bg-muted/50 rounded-md border">{fetchedData.title || "N/A"}</p>
+                    )}
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="pbiDesc" className="font-semibold">Descripción</Label>
+                    {isEditing ? (
+                         <Textarea 
+                            id="pbiDesc" 
+                            value={fetchedData.description} 
+                            onChange={(e) => handleFetchedDataChange('description', e.target.value)} 
+                            rows={4} 
+                            className="resize-y"
+                        />
+                    ) : (
+                        <p className="text-sm p-3 bg-muted/50 rounded-md border whitespace-pre-wrap min-h-[60px]">{fetchedData.description || "N/A"}</p>
+                    )}
+                </div>
+
+                <div className="space-y-2">
+                    <Label htmlFor="pbiAc" className="font-semibold">Criterios de Aceptación</Label>
+                     {isEditing ? (
+                        <Textarea 
+                            id="pbiAc" 
+                            value={fetchedData.acceptanceCriteria} 
+                            onChange={(e) => handleFetchedDataChange('acceptanceCriteria', e.target.value)} 
+                            rows={8} 
+                            className="resize-y"
+                        />
+                    ) : (
+                        <p className="text-sm p-3 bg-muted/50 rounded-md border whitespace-pre-wrap min-h-[120px]">{fetchedData.acceptanceCriteria || "N/A"}</p>
+                    )}
+                </div>
+            </CardContent>
+            <CardFooter className="flex flex-col sm:flex-row gap-2 pt-6 justify-between items-center">
+                 <Button variant="outline" onClick={handleReset} disabled={isLoading} className="w-full sm:w-auto">
+                    Buscar otro PBI
                 </Button>
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="pbiTitle" className="font-medium">
-                  Title
-                </Label>
-                <Input 
-                    id="pbiTitle" 
-                    value={fetchedData.title} 
-                    onChange={(e) => handleFetchedDataChange('title', e.target.value)} 
-                    readOnly={!isEditing}
-                    className={cn(readOnlyClasses)}
-                />
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="pbiDesc" className="font-medium">
-                  Description
-                </Label>
-                <Textarea 
-                    id="pbiDesc" 
-                    value={fetchedData.description} 
-                    onChange={(e) => handleFetchedDataChange('description', e.target.value)} 
-                    rows={4} 
-                    className={cn("resize-y", readOnlyClasses)}
-                    readOnly={!isEditing}
-                />
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="pbiAc" className="font-medium">
-                  Acceptance Criteria
-                </Label>
-                <Textarea 
-                    id="pbiAc" 
-                    value={fetchedData.acceptanceCriteria} 
-                    onChange={(e) => handleFetchedDataChange('acceptanceCriteria', e.target.value)} 
-                    rows={8} 
-                    className={cn("resize-y", readOnlyClasses)}
-                    readOnly={!isEditing}
-                />
-            </div>
-            <div className="flex flex-col sm:flex-row gap-2 pt-2">
                 <Button onClick={handleGenerate} disabled={isLoading} className="w-full sm:w-auto">
                 {isLoading ? (
                     <>
@@ -259,11 +278,8 @@ export function PbiIdForm({ setTestCasesOutput, setIsLoading, isLoading, setPbiI
                     </>
                 )}
                 </Button>
-                <Button variant="outline" onClick={handleReset} disabled={isLoading} className="w-full sm:w-auto">
-                    Buscar otro PBI
-                </Button>
-            </div>
-        </div>
+            </CardFooter>
+        </Card>
     )
   }
 
