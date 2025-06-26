@@ -82,10 +82,19 @@ export function PbiIdForm({ setTestCasesOutput, setIsLoading, isLoading, setPbiI
         }
 
         const data = await response.json();
+        
+        const stripHtml = (html: string | undefined): string => {
+            if (!html) return "";
+            // This component is client-side, so document is available.
+            // Using DOMParser is a safe and effective way to strip HTML and decode entities.
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            return doc.body.textContent || "";
+        };
+
         const details = {
             title: data.fields["System.Title"] || "",
-            description: data.fields["System.Description"] ? data.fields["System.Description"].replace(/<[^>]*>?/gm, '') : "",
-            acceptanceCriteria: data.fields["Microsoft.VSTS.Common.AcceptanceCriteria"] ? data.fields["Microsoft.VSTS.Common.AcceptanceCriteria"].replace(/<[^>]*>?/gm, '') : "",
+            description: stripHtml(data.fields["System.Description"]),
+            acceptanceCriteria: stripHtml(data.fields["Microsoft.VSTS.Common.AcceptanceCriteria"]),
         };
 
         if (!details.acceptanceCriteria) {
