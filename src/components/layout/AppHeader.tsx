@@ -2,8 +2,9 @@
 "use client";
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Settings, TestTubeDiagonal, LogOut, User as UserIcon } from 'lucide-react';
+import { Settings, TestTubeDiagonal, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -48,7 +49,7 @@ const UserNav = () => {
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-9 w-9">
             <AvatarImage src={user.photoURL || undefined} alt={user.displayName || 'User'} />
-            <AvatarFallback>{getInitials(user.displayName)}</AvatarFallback>
+            <AvatarFallback>{getInitials(user.displayName || user.email)}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
