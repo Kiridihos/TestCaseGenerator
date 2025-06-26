@@ -14,11 +14,14 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { useAzureDevOpsConfig } from "@/hooks/useApiKey";
 import { useToast } from "@/hooks/use-toast";
 import { generateTestCases, type GenerateTestCasesOutput } from "@/ai/flows/generate-test-cases";
-import { Loader2, Search, AlertTriangle } from "lucide-react";
+import { Loader2, Search, AlertTriangle, Wand2 } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
 
 const formSchema = z.object({
   pbiId: z.string().regex(/^\d+$/, "PBI ID must be a number.").min(1, "PBI ID cannot be empty."),
@@ -33,9 +36,17 @@ interface PbiIdFormProps {
   setPbiIdForPush: (id: string) => void;
 }
 
+interface PbiDetails {
+    title: string;
+    description: string;
+    acceptanceCriteria: string;
+}
+
 export function PbiIdForm({ setTestCasesOutput, setIsLoading, isLoading, setPbiIdForPush }: PbiIdFormProps) {
   const { toast } = useToast();
   const { config: devOpsConfig, isConfigLoaded } = useAzureDevOpsConfig();
+  const [fetchedData, setFetchedData] = useState<PbiDetails | null>(null);
+  const [pbiId, setPbiId] = useState("");
 
   const form = useForm<PbiIdFormValues>({
     resolver: zodResolver(formSchema),
@@ -44,7 +55,7 @@ export function PbiIdForm({ setTestCasesOutput, setIsLoading, isLoading, setPbiI
     },
   });
 
-  async function fetchPbiDetails(pbiId: string) {
+  async function fetchPbiDetails(id: string): Promise<PbiDetails | null> {
     if (!devOpsConfig.pat || !devOpsConfig.organization || !devOpsConfig.project) {
         toast({
             title: "Configuración de Azure DevOps Incompleta",
@@ -56,7 +67,7 @@ export function PbiIdForm({ setTestCasesOutput, setIsLoading, isLoading, setPbiI
     
     const { pat, organization, project } = devOpsConfig;
     const fields = "System.Title,System.Description,Microsoft.VSTS.Common.AcceptanceCriteria";
-    const apiUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/${pbiId}?fields=${fields}&api-version=7.1-preview.3`;
+    const apiUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/${id}?fields=${fields}&api-version=7.1-preview.3`;
 
     try {
         const response = await fetch(apiUrl, {
@@ -71,56 +82,70 @@ export function PbiIdForm({ setTestCasesOutput, setIsLoading, isLoading, setPbiI
         }
 
         const data = await response.json();
-        return {
+        const details = {
             title: data.fields["System.Title"] || "",
-            description: data.fields["System.Description"] ? data.fields["System.Description"].replace(/<[^>]*>?/gm, '') : "", // Strip HTML tags
+            description: data.fields["System.Description"] ? data.fields["System.Description"].replace(/<[^>]*>?/gm, '') : "",
             acceptanceCriteria: data.fields["Microsoft.VSTS.Common.AcceptanceCriteria"] ? data.fields["Microsoft.VSTS.Common.AcceptanceCriteria"].replace(/<[^>]*>?/gm, '') : "",
         };
+
+        if (!details.acceptanceCriteria) {
+            toast({
+                variant: "destructive",
+                title: "Faltan Criterios de Aceptación",
+                description: `El PBI ${id} no tiene Criterios de Aceptación definidos.`,
+            });
+            return null;
+        }
+        return details;
+
     } catch (error) {
         console.error("Error fetching PBI details:", error);
         toast({
             variant: "destructive",
             title: "Error al Obtener PBI",
-            description: `No se pudo obtener el PBI ${pbiId}. Verifica el ID y tu configuración.`,
+            description: `No se pudo obtener el PBI ${id}. Verifica el ID y tu configuración.`,
         });
         return null;
     }
   }
 
-  async function onSubmit(values: PbiIdFormValues) {
+  async function handleFetch(values: PbiIdFormValues) {
     setIsLoading(true);
     setTestCasesOutput(null);
     setPbiIdForPush("");
-
+    setFetchedData(null);
+    
     toast({ title: "Obteniendo PBI de Azure DevOps...", description: `Buscando PBI con ID: ${values.pbiId}` });
     const pbiDetails = await fetchPbiDetails(values.pbiId);
 
-    if (!pbiDetails) {
-      setIsLoading(false);
-      return;
-    }
-
-    if (!pbiDetails.acceptanceCriteria) {
+    if (pbiDetails) {
+        setFetchedData(pbiDetails);
+        setPbiId(values.pbiId);
         toast({
-            variant: "destructive",
-            title: "Faltan Criterios de Aceptación",
-            description: `El PBI ${values.pbiId} no tiene Criterios de Aceptación. No se pueden generar casos de prueba.`,
-        });
-        setIsLoading(false);
-        return;
+          title: "PBI Obtenido Correctamente",
+          description: "Revisa la información y genera los casos de prueba."
+        })
     }
+    setIsLoading(false);
+  }
 
-    toast({ title: "PBI Obtenido", description: "Generando casos de prueba con la información del PBI." });
+  async function handleGenerate() {
+    if (!fetchedData) return;
+
+    setIsLoading(true);
+    setTestCasesOutput(null);
+    
+    toast({ title: "Generando Casos de Prueba...", description: "La IA está trabajando. Por favor espera." });
 
     try {
-      const result = await generateTestCases(pbiDetails);
+      const result = await generateTestCases(fetchedData);
       setTestCasesOutput(result);
-      setPbiIdForPush(values.pbiId);
+      setPbiIdForPush(pbiId);
 
       if (result.testCases.length === 0) {
         toast({
           title: "Generación Completa",
-          description: "No se generaron casos de prueba. Intenta refinar los criterios de aceptación en Azure DevOps.",
+          description: "No se generaron casos de prueba. Revisa los criterios de aceptación en Azure DevOps.",
         });
       } else {
         toast({
@@ -132,7 +157,7 @@ export function PbiIdForm({ setTestCasesOutput, setIsLoading, isLoading, setPbiI
       console.error("Error generating test cases:", error);
       toast({
         variant: "destructive",
-        title: "Error",
+        title: "Error de Generación",
         description: "Falló la generación de casos de prueba. Por favor intenta de nuevo.",
       });
       setTestCasesOutput(null);
@@ -141,11 +166,55 @@ export function PbiIdForm({ setTestCasesOutput, setIsLoading, isLoading, setPbiI
     }
   }
 
+    function handleReset() {
+        setFetchedData(null);
+        setPbiId("");
+        setTestCasesOutput(null);
+        form.reset();
+    }
+
   const isConfigMissing = !devOpsConfig.pat || !devOpsConfig.organization || !devOpsConfig.project;
+
+  if (fetchedData) {
+    return (
+        <div className="space-y-6">
+            <div className="space-y-2">
+                <Label htmlFor="pbiTitle">Title</Label>
+                <Input id="pbiTitle" readOnly value={fetchedData.title} className="bg-muted/60"/>
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="pbiDesc">Description</Label>
+                <Textarea id="pbiDesc" readOnly value={fetchedData.description} rows={4} className="resize-none bg-muted/60"/>
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="pbiAc">Acceptance Criteria</Label>
+                <Textarea id="pbiAc" readOnly value={fetchedData.acceptanceCriteria} rows={6} className="resize-none bg-muted/60"/>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                <Button onClick={handleGenerate} disabled={isLoading} className="w-full sm:w-auto">
+                {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generando...
+                    </>
+                ) : (
+                    <>
+                      <Wand2 className="mr-2 h-4 w-4" />
+                      Generate Test Cases
+                    </>
+                )}
+                </Button>
+                <Button variant="outline" onClick={handleReset} disabled={isLoading} className="w-full sm:w-auto">
+                    Buscar otro PBI
+                </Button>
+            </div>
+        </div>
+    )
+  }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(handleFetch)} className="space-y-4">
         <FormField
           control={form.control}
           name="pbiId"
@@ -172,12 +241,12 @@ export function PbiIdForm({ setTestCasesOutput, setIsLoading, isLoading, setPbiI
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Obteniendo y Generando...
+              Obteniendo...
             </>
           ) : (
             <>
               <Search className="mr-2 h-4 w-4" />
-              Obtener PBI y Generar Casos de Prueba
+              Obtener PBI
             </>
           )}
         </Button>
