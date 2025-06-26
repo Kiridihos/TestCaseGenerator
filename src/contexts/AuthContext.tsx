@@ -33,14 +33,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, pass);
-      toast({ title: "Login Successful", description: "Welcome back!" });
+      toast({ title: "Inicio de Sesión Exitoso", description: "¡Bienvenido de nuevo!" });
     } catch (error) {
-      console.error("Sign-in error:", error);
+      console.error("Error de inicio de sesión:", error);
       const authError = error as AuthError;
+      let description = "Credenciales incorrectas. Por favor, inténtalo de nuevo.";
+      
+      switch (authError.code) {
+          case 'auth/user-not-found':
+          case 'auth/wrong-password':
+          case 'auth/invalid-credential':
+              description = "Credenciales incorrectas. Por favor, verifica tu correo y contraseña.";
+              break;
+          case 'auth/invalid-email':
+              description = "Por favor, ingresa una dirección de correo válida.";
+              break;
+          case 'auth/user-disabled':
+              description = "Esta cuenta de usuario ha sido deshabilitada.";
+              break;
+          default:
+              description = "Ocurrió un error inesperado al iniciar sesión.";
+              break;
+      }
+
       toast({
         variant: "destructive",
-        title: "Login Failed",
-        description: authError.message || "Invalid credentials. Please try again."
+        title: "Fallo de Inicio de Sesión",
+        description: description
       });
       throw error;
     } finally {
@@ -52,14 +71,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     try {
       await createUserWithEmailAndPassword(auth, email, pass);
-      toast({ title: "Account Created", description: "Welcome! You have been signed in." });
+      toast({ title: "Cuenta Creada", description: "¡Bienvenido! Has iniciado sesión." });
     } catch (error) {
-      console.error("Sign-up error:", error);
+      console.error("Error de registro:", error);
       const authError = error as AuthError;
+      let description = "No se pudo crear la cuenta. Por favor, inténtalo de nuevo.";
+
+      switch (authError.code) {
+        case 'auth/email-already-in-use':
+          description = "Este correo electrónico ya está registrado.";
+          break;
+        case 'auth/invalid-email':
+          description = "Por favor, ingresa una dirección de correo válida.";
+          break;
+        case 'auth/weak-password':
+          description = "La contraseña debe tener al menos 6 caracteres.";
+          break;
+        default:
+          description = "Ocurrió un error inesperado al registrarse.";
+          break;
+      }
+
       toast({
         variant: "destructive",
-        title: "Registration Failed",
-        description: authError.message || "Could not create account. Please try again."
+        title: "Fallo de Registro",
+        description: description
       });
       throw error;
     } finally {
@@ -72,12 +108,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       await firebaseSignOut(auth);
       setUser(null);
-      toast({ title: "Signed Out", description: "You have been successfully signed out." });
+      toast({ title: "Sesión Cerrada", description: "Has cerrado sesión exitosamente." });
     } catch (error: any) {
-      console.error("Sign-out error:", error);
+      console.error("Error al cerrar sesión:", error);
        toast({
         variant: "destructive",
-        title: "Sign-Out Failed",
+        title: "Fallo al Cerrar Sesión",
         description: error.message
       });
     } finally {
