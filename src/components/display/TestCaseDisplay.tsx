@@ -173,7 +173,7 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
   
   const isConfigMissing = !devOpsConfig.pat || !devOpsConfig.organization || !devOpsConfig.project;
   
-  const readOnlyClasses = "read-only:border-0 read-only:bg-transparent read-only:shadow-none read-only:focus-visible:ring-0 read-only:focus-visible:ring-offset-0 read-only:cursor-default";
+  const readOnlyClasses = "read-only:bg-background read-only:border read-only:shadow-sm read-only:cursor-text read-only:ring-0 read-only:focus-visible:ring-0 read-only:focus-visible:ring-offset-0";
 
   return (
     <Card className="w-full shadow-xl">
@@ -200,31 +200,30 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
           <Card key={index} className="bg-muted/30">
             <CardHeader className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor={`title-${index}`} className="font-semibold">Título</Label>
+                <Label htmlFor={`title-${index}`} className="font-semibold text-foreground">Título</Label>
                 <Input 
                   id={`title-${index}`}
                   value={tc.title}
                   readOnly={!isEditing}
                   onChange={(e) => handleTestCaseChange(index, 'title', e.target.value)}
                   className={cn(
-                    "w-full",
-                    readOnlyClasses,
-                    !isEditing && "p-0 h-auto text-lg font-semibold"
+                    "w-full text-lg font-semibold",
+                    readOnlyClasses
                   )}
                   placeholder="Título del Caso de Prueba"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor={`description-${index}`} className="font-semibold">Descripción</Label>
+                <Label htmlFor={`description-${index}`} className="font-semibold text-foreground">Descripción</Label>
                 <Textarea
                   id={`description-${index}`}
                   value={tc.description}
                   readOnly={!isEditing}
                   onChange={(e) => handleTestCaseChange(index, 'description', e.target.value)}
                   className={cn(
-                    "w-full resize-none text-muted-foreground",
-                    readOnlyClasses,
-                    !isEditing ? "p-0" : "resize-y"
+                    "w-full",
+                    isEditing ? "resize-y" : "resize-none",
+                    readOnlyClasses
                   )}
                   placeholder="Descripción del Caso de Prueba"
                   rows={2}
@@ -249,7 +248,11 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
                             value={step.action}
                             readOnly={!isEditing}
                             onChange={(e) => handleStepChange(index, stepIndex, 'action', e.target.value)}
-                            className={cn("w-full resize-y", readOnlyClasses)}
+                            className={cn(
+                                "w-full",
+                                isEditing ? "resize-y" : "resize-none",
+                                readOnlyClasses
+                            )}
                             placeholder="Acción..."
                             rows={3}
                         />
@@ -259,7 +262,11 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
                             value={step.expectedResult}
                             readOnly={!isEditing}
                             onChange={(e) => handleStepChange(index, stepIndex, 'expectedResult', e.target.value)}
-                            className={cn("w-full resize-y", readOnlyClasses)}
+                            className={cn(
+                                "w-full",
+                                isEditing ? "resize-y" : "resize-none",
+                                readOnlyClasses
+                            )}
                             placeholder="Resultado esperado..."
                             rows={3}
                         />
