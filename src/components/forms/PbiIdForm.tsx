@@ -67,7 +67,7 @@ export function PbiIdForm({ setTestCasesOutput, setIsLoading, isLoading, setPbiI
     
     const { pat, organization, project } = devOpsConfig;
     const fields = "System.Title,System.Description,Microsoft.VSTS.Common.AcceptanceCriteria";
-    const apiUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/${id}?$expand=all&fields=${fields}&api-version=7.1-preview.3`;
+    const apiUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/${id}?fields=${fields}&api-version=7.1-preview.3`;
 
     try {
         const response = await fetch(apiUrl, {
@@ -84,7 +84,7 @@ export function PbiIdForm({ setTestCasesOutput, setIsLoading, isLoading, setPbiI
         const data = await response.json();
         
         const getTextFromRichField = (html: string | undefined): string => {
-            if (!html) return "";
+            if (typeof window === 'undefined' || !html) return "";
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
             return doc.body.textContent || "";
