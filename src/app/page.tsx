@@ -4,19 +4,187 @@
 import { useState } from 'react';
 import AppLayout from '@/components/layout/AppLayout';
 import { UserStoryForm } from '@/components/forms/UserStoryForm';
-import { PbiIdForm } from '@/components/forms/PbiIdForm';
+import { PbiIdForm, type PbiDetails } from '@/components/forms/PbiIdForm';
 import { TestCaseDisplay } from '@/components/display/TestCaseDisplay';
-import type { GenerateTestCasesOutput } from '@/ai/flows/generate-test-cases';
+import { generateTestCases, type GenerateTestCasesInput, type GenerateTestCasesOutput } from '@/ai/flows/generate-test-cases';
+import { useAzureDevOpsConfig } from "@/hooks/useApiKey";
+import { useToast } from "@/hooks/use-toast";
 import { Loader2, FileText, Download } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-
 export default function HomePage() {
   const [testCasesOutput, setTestCasesOutput] = useState<GenerateTestCasesOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [pbiIdForPush, setPbiIdForPush] = useState<string>("");
+
+  // Lifted state from PbiIdForm
+  const [fetchedPbiData, setFetchedPbiData] = useState<PbiDetails | null>(null);
+  
+  const { toast } = useToast();
+  const { config: devOpsConfig, isConfigLoaded } = useAzureDevOpsConfig();
+  const isConfigMissing = !isConfigLoaded || !devOpsConfig.pat || !devOpsConfig.organization || !devOpsConfig.project;
+
+  const handleManualGenerate = async (values: GenerateTestCasesInput) => {
+    setIsLoading(true);
+    setTestCasesOutput(null);
+    setFetchedPbiData(null);
+    setPbiIdForPush("");
+
+    try {
+      const result = await generateTestCases(values);
+      setTestCasesOutput(result);
+      if (result.testCases.length === 0) {
+        toast({
+          title: "Generation Complete",
+          description: "No test cases were generated. Try refining your input.",
+        });
+      } else {
+        toast({
+          title: "Success!",
+          description: "Test cases generated successfully.",
+        });
+      }
+    } catch (error) {
+      console.error("Error generating test cases:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to generate test cases. Please try again.",
+      });
+      setTestCasesOutput(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const fetchPbiDetails = async (id: string): Promise<PbiDetails | null> => {
+    if (!devOpsConfig.pat || !devOpsConfig.organization || !devOpsConfig.project) {
+        toast({
+            title: "Configuración de Azure DevOps Incompleta",
+            description: "Por favor configura tu PAT, Organización y Proyecto en ajustes.",
+            variant: "destructive",
+        });
+        return null;
+    }
+    
+    const { pat, organization, project } = devOpsConfig;
+    const fields = "System.Title,System.Description,Microsoft.VSTS.Common.AcceptanceCriteria";
+    const apiUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/${id}?fields=${fields}&api-version=7.1-preview.3`;
+
+    try {
+        const response = await fetch(apiUrl, {
+            headers: {
+                "Authorization": `Basic ${btoa(":" + pat)}`
+            }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `Error: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        
+        const getTextFromRichField = (html: string | undefined): string => {
+            if (typeof window === 'undefined' || !html) return "";
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            return doc.body.textContent || "";
+        };
+
+        const acceptanceCriteria = getTextFromRichField(data.fields["Microsoft.VSTS.Common.AcceptanceCriteria"]);
+        const description = getTextFromRichField(data.fields["System.Description"]);
+        
+        const details: PbiDetails = {
+            title: data.fields["System.Title"] || "",
+            description: description,
+            acceptanceCriteria: acceptanceCriteria
+        };
+
+        if (!details.acceptanceCriteria) {
+            toast({
+                variant: "destructive",
+                title: "Faltan Criterios de Aceptación",
+                description: `El PBI ${id} no tiene Criterios de Aceptación definidos.`,
+            });
+            return null;
+        }
+        return details;
+
+    } catch (error: any) {
+        console.error("Error fetching PBI details:", error);
+        toast({
+            variant: "destructive",
+            title: "Error al Obtener PBI",
+            description: `No se pudo obtener el PBI ${id}. Verifica el ID, tu configuración y la consola. ${error.message}`,
+        });
+        return null;
+    }
+  }
+
+  const handlePbiFetch = async (pbiId: string) => {
+    setIsLoading(true);
+    setTestCasesOutput(null);
+    setFetchedPbiData(null);
+    setPbiIdForPush("");
+
+    toast({ title: "Obteniendo PBI de Azure DevOps...", description: `Buscando PBI con ID: ${pbiId}` });
+    const pbiDetails = await fetchPbiDetails(pbiId);
+
+    if (pbiDetails) {
+        setFetchedPbiData(pbiDetails);
+        setPbiIdForPush(pbiId);
+        toast({
+          title: "PBI Obtenido Correctamente",
+          description: "Revisa la información. Haz clic en 'Editar' para modificarla antes de generar los casos de prueba."
+        })
+    }
+    setIsLoading(false);
+  }
+
+  const handlePbiGenerate = async () => {
+    if (!fetchedPbiData) return;
+
+    setIsLoading(true);
+    setTestCasesOutput(null);
+    
+    toast({ title: "Generando Casos de Prueba...", description: "La IA está trabajando. Por favor espera." });
+
+    try {
+      const result = await generateTestCases(fetchedPbiData);
+      setTestCasesOutput(result);
+      // pbiIdForPush is already set
+      if (result.testCases.length === 0) {
+        toast({
+          title: "Generación Completa",
+          description: "No se generaron casos de prueba. Revisa los criterios de aceptación en Azure DevOps.",
+        });
+      } else {
+        toast({
+          title: "¡Éxito!",
+          description: "Casos de prueba generados exitosamente a partir del PBI.",
+        });
+      }
+    } catch (error) {
+      console.error("Error generating test cases:", error);
+      toast({
+        variant: "destructive",
+        title: "Error de Generación",
+        description: "Falló la generación de casos de prueba. Por favor intenta de nuevo.",
+      });
+      setTestCasesOutput(null);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  const handlePbiReset = () => {
+    setFetchedPbiData(null);
+    setPbiIdForPush("");
+    setTestCasesOutput(null);
+  }
 
   return (
     <AppLayout>
@@ -45,18 +213,19 @@ export default function HomePage() {
                     </TabsList>
                     <TabsContent value="manual" className="pt-6">
                         <UserStoryForm 
-                            setTestCasesOutput={setTestCasesOutput} 
-                            setIsLoading={setIsLoading} 
+                            onGenerate={handleManualGenerate} 
                             isLoading={isLoading}
-                            setPbiIdForPush={setPbiIdForPush} 
                         />
                     </TabsContent>
                     <TabsContent value="pbi" className="pt-6">
                         <PbiIdForm
-                            setTestCasesOutput={setTestCasesOutput} 
-                            setIsLoading={setIsLoading} 
-                            isLoading={isLoading} 
-                            setPbiIdForPush={setPbiIdForPush}
+                            isLoading={isLoading}
+                            isConfigMissing={isConfigMissing}
+                            fetchedData={fetchedPbiData}
+                            onDataChange={setFetchedPbiData}
+                            onFetch={handlePbiFetch}
+                            onGenerate={handlePbiGenerate}
+                            onReset={handlePbiReset}
                         />
                     </TabsContent>
                 </Tabs>

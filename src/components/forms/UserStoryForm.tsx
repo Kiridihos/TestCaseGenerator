@@ -15,8 +15,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { generateTestCases, type GenerateTestCasesInput, type GenerateTestCasesOutput } from "@/ai/flows/generate-test-cases";
-import { useToast } from "@/hooks/use-toast";
+import type { GenerateTestCasesInput } from "@/ai/flows/generate-test-cases";
 import { Loader2, Pencil } from "lucide-react";
 
 const formSchema = z.object({
@@ -28,14 +27,11 @@ const formSchema = z.object({
 type UserStoryFormValues = z.infer<typeof formSchema>;
 
 interface UserStoryFormProps {
-  setTestCasesOutput: (output: GenerateTestCasesOutput | null) => void;
-  setIsLoading: (loading: boolean) => void;
+  onGenerate: (values: GenerateTestCasesInput) => void;
   isLoading: boolean;
-  setPbiIdForPush: (id: string) => void;
 }
 
-export function UserStoryForm({ setTestCasesOutput, setIsLoading, isLoading, setPbiIdForPush }: UserStoryFormProps) {
-  const { toast } = useToast();
+export function UserStoryForm({ onGenerate, isLoading }: UserStoryFormProps) {
   const form = useForm<UserStoryFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -45,40 +41,8 @@ export function UserStoryForm({ setTestCasesOutput, setIsLoading, isLoading, set
     },
   });
 
-  async function onSubmit(values: UserStoryFormValues) {
-    setIsLoading(true);
-    setTestCasesOutput(null);
-    setPbiIdForPush("");
-    try {
-      const input: GenerateTestCasesInput = {
-        title: values.title,
-        description: values.description,
-        acceptanceCriteria: values.acceptanceCriteria,
-      };
-      const result = await generateTestCases(input);
-      setTestCasesOutput(result);
-      if (result.testCases.length === 0) {
-        toast({
-          title: "Generation Complete",
-          description: "No test cases were generated. Try refining your input.",
-        });
-      } else {
-        toast({
-          title: "Success!",
-          description: "Test cases generated successfully.",
-        });
-      }
-    } catch (error) {
-      console.error("Error generating test cases:", error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to generate test cases. Please try again.",
-      });
-      setTestCasesOutput(null);
-    } finally {
-      setIsLoading(false);
-    }
+  function onSubmit(values: UserStoryFormValues) {
+    onGenerate(values);
   }
 
   return (
