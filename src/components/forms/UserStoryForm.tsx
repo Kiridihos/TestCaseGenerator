@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -40,19 +40,15 @@ export function UserStoryForm({ onGenerate, isLoading, values, onValuesChange }:
     defaultValues: values,
   });
 
-  const watchedValues = form.watch();
-  const isMounted = useRef(false);
-
+  // This effect syncs the form's internal state up to the parent component
+  // by subscribing to form value changes. This is the recommended way to avoid
+  // infinite loops caused by calling setState in a useEffect hook.
   useEffect(() => {
-    // This effect syncs the form's internal state up to the parent component.
-    // We use the isMounted ref to prevent this from running on the initial render,
-    // which avoids a potential infinite loop if not handled carefully.
-    if (isMounted.current) {
-      onValuesChange(watchedValues);
-    } else {
-      isMounted.current = true;
-    }
-  }, [watchedValues, onValuesChange]);
+    const subscription = form.watch((value) => {
+      onValuesChange(value as UserStoryFormValues);
+    });
+    return () => subscription.unsubscribe();
+  }, [form.watch, onValuesChange]);
 
 
   function onSubmit(values: UserStoryFormValues) {
