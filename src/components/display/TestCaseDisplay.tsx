@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -201,7 +200,7 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
           <Card key={index} className="bg-muted/30">
             <CardHeader className="space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor={`title-${index}`} className="font-medium">Título</Label>
+                <Label htmlFor={`title-${index}`} className="font-semibold">Título</Label>
                 <Input 
                   id={`title-${index}`}
                   value={tc.title}
@@ -216,7 +215,7 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor={`description-${index}`} className="font-medium">Descripción</Label>
+                <Label htmlFor={`description-${index}`} className="font-semibold">Descripción</Label>
                 <Textarea
                   id={`description-${index}`}
                   value={tc.description}
@@ -236,9 +235,9 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[80px]">Paso Nº</TableHead>
-                    <TableHead>Acción</TableHead>
-                    <TableHead>Resultado Esperado</TableHead>
+                    <TableHead className="w-[80px] text-foreground font-semibold">Paso Nº</TableHead>
+                    <TableHead className="text-foreground font-semibold">Acción</TableHead>
+                    <TableHead className="text-foreground font-semibold">Resultado Esperado</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
