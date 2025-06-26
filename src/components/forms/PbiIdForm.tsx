@@ -40,7 +40,6 @@ interface PbiDetails {
     title: string;
     description: string;
     acceptanceCriteria: string;
-    acceptanceCriteriaImages?: string[];
 }
 
 export function PbiIdForm({ setTestCasesOutput, setIsLoading, isLoading, setPbiIdForPush }: PbiIdFormProps) {
@@ -84,51 +83,6 @@ export function PbiIdForm({ setTestCasesOutput, setIsLoading, isLoading, setPbiI
 
         const data = await response.json();
         
-        const fetchImageAsDataUri = async (url: string): Promise<string | null> => {
-            try {
-                const imageResponse = await fetch(url, {
-                    headers: { "Authorization": `Basic ${btoa(":" + pat)}` }
-                });
-                if (!imageResponse.ok) {
-                    console.error(`Failed to fetch image: ${url}, status: ${imageResponse.status}`);
-                    return null;
-                }
-                const blob = await imageResponse.blob();
-                return new Promise((resolve) => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result as string);
-                    reader.onerror = (error) => {
-                        console.error("FileReader error:", error);
-                        resolve(null);
-                    };
-                    reader.readAsDataURL(blob);
-                });
-            } catch (error) {
-                console.error(`Network or other error fetching image ${url}:`, error);
-                return null;
-            }
-        };
-
-        const parseRichTextFieldWithImages = async (html: string | undefined): Promise<{text: string, images: string[]}> => {
-            if (!html) return { text: "", images: [] };
-
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const text = doc.body.textContent || "";
-            const imageElements = Array.from(doc.querySelectorAll('img'));
-            const imageUrls = imageElements.map(img => img.src).filter(Boolean);
-            
-            if (imageUrls.length === 0) {
-                return { text, images: [] };
-            }
-            
-            const imagePromises = imageUrls.map(fetchImageAsDataUri);
-            const results = await Promise.all(imagePromises);
-            const imageDataUris = results.filter((uri): uri is string => uri !== null);
-
-            return { text, images: imageDataUris };
-        };
-        
         const getTextFromRichField = (html: string | undefined): string => {
             if (!html) return "";
             const parser = new DOMParser();
@@ -136,24 +90,20 @@ export function PbiIdForm({ setTestCasesOutput, setIsLoading, isLoading, setPbiI
             return doc.body.textContent || "";
         };
 
-        const acHtml = data.fields["Microsoft.VSTS.Common.AcceptanceCriteria"];
-        const descHtml = data.fields["System.Description"];
-        
-        const acParsed = await parseRichTextFieldWithImages(acHtml);
-        const descriptionText = getTextFromRichField(descHtml);
+        const acceptanceCriteria = getTextFromRichField(data.fields["Microsoft.VSTS.Common.AcceptanceCriteria"]);
+        const description = getTextFromRichField(data.fields["System.Description"]);
         
         const details: PbiDetails = {
             title: data.fields["System.Title"] || "",
-            description: descriptionText,
-            acceptanceCriteria: acParsed.text,
-            acceptanceCriteriaImages: acParsed.images,
+            description: description,
+            acceptanceCriteria: acceptanceCriteria
         };
 
-        if (!details.acceptanceCriteria && (!details.acceptanceCriteriaImages || details.acceptanceCriteriaImages.length === 0)) {
+        if (!details.acceptanceCriteria) {
             toast({
                 variant: "destructive",
                 title: "Faltan Criterios de Aceptación",
-                description: `El PBI ${id} no tiene Criterios de Aceptación de texto o imagen definidos.`,
+                description: `El PBI ${id} no tiene Criterios de Aceptación definidos.`,
             });
             return null;
         }
@@ -248,24 +198,9 @@ export function PbiIdForm({ setTestCasesOutput, setIsLoading, isLoading, setPbiI
                 <Textarea id="pbiDesc" readOnly value={fetchedData.description} rows={4} className="resize-none bg-muted/60"/>
             </div>
             <div className="space-y-2">
-                <Label htmlFor="pbiAc">Acceptance Criteria (Text)</Label>
+                <Label htmlFor="pbiAc">Acceptance Criteria</Label>
                 <Textarea id="pbiAc" readOnly value={fetchedData.acceptanceCriteria} rows={6} className="resize-none bg-muted/60"/>
             </div>
-            {fetchedData.acceptanceCriteriaImages && fetchedData.acceptanceCriteriaImages.length > 0 && (
-                <div className="space-y-2">
-                    <Label>Acceptance Criteria (Images)</Label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 rounded-md border border-input p-3 bg-muted/60">
-                        {fetchedData.acceptanceCriteriaImages.map((imgDataUri, index) => (
-                            <img 
-                                key={index}
-                                src={imgDataUri} 
-                                alt={`Acceptance criteria image ${index + 1}`}
-                                className="rounded-md border object-contain"
-                            />
-                        ))}
-                    </div>
-                </div>
-            )}
             <div className="flex flex-col sm:flex-row gap-2 pt-2">
                 <Button onClick={handleGenerate} disabled={isLoading} className="w-full sm:w-auto">
                 {isLoading ? (
