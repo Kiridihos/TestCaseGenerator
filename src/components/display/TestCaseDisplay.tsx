@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -181,7 +182,7 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
         <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
             <ListChecks className="h-6 w-6 text-primary" />
-            <CardTitle className="font-headline">Casos de Prueba Generados</CardTitle>
+            <CardTitle className="font-headline">Casos de Prueba Generados ({editableTestCases.length})</CardTitle>
             </div>
              <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)}>
                 {isEditing ? <Check className="mr-2 h-4 w-4" /> : <Pencil className="mr-2 h-4 w-4" />}
@@ -199,6 +200,7 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
         {editableTestCases.map((tc, index) => (
           <Card key={index} className="bg-muted/30">
             <CardHeader className="space-y-4">
+              <CardTitle className="text-xl font-semibold">Caso de Prueba {index + 1}</CardTitle>
               <div className="space-y-1.5">
                 <Label htmlFor={`title-${index}`} className="font-semibold text-foreground">Título</Label>
                 <Input 
@@ -207,7 +209,7 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
                   readOnly={!isEditing}
                   onChange={(e) => handleTestCaseChange(index, 'title', e.target.value)}
                   className={cn(
-                    "w-full text-lg font-semibold",
+                    "w-full text-lg font-semibold read-only:bg-background read-only:border read-only:shadow-sm",
                     readOnlyClasses
                   )}
                   placeholder="Título del Caso de Prueba"
@@ -221,7 +223,7 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
                   readOnly={!isEditing}
                   onChange={(e) => handleTestCaseChange(index, 'description', e.target.value)}
                   className={cn(
-                    "w-full",
+                    "w-full read-only:bg-background read-only:border read-only:shadow-sm",
                     isEditing ? "resize-y" : "resize-none",
                     readOnlyClasses
                   )}
@@ -249,7 +251,7 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
                             readOnly={!isEditing}
                             onChange={(e) => handleStepChange(index, stepIndex, 'action', e.target.value)}
                             className={cn(
-                                "w-full",
+                                "w-full read-only:bg-background read-only:border read-only:shadow-sm",
                                 isEditing ? "resize-y" : "resize-none",
                                 readOnlyClasses
                             )}
@@ -263,7 +265,7 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
                             readOnly={!isEditing}
                             onChange={(e) => handleStepChange(index, stepIndex, 'expectedResult', e.target.value)}
                             className={cn(
-                                "w-full",
+                                "w-full read-only:bg-background read-only:border read-only:shadow-sm",
                                 isEditing ? "resize-y" : "resize-none",
                                 readOnlyClasses
                             )}
@@ -328,3 +330,5 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
     </Card>
   );
 }
+
+    
