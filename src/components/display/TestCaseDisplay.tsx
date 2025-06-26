@@ -10,9 +10,10 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAzureDevOpsConfig } from "@/hooks/useApiKey";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle, ListChecks, UploadCloud, AlertTriangle, Loader2, Pencil } from "lucide-react";
+import { CheckCircle, ListChecks, UploadCloud, AlertTriangle, Loader2, Pencil, Check } from "lucide-react";
 import Link from "next/link";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 interface TestCaseDisplayProps {
   testCases: TestCase[];
@@ -25,6 +26,7 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
   const [pbiId, setPbiId] = useState(initialPbiId || "");
   const [isPushing, setIsPushing] = useState(false);
   const [editableTestCases, setEditableTestCases] = useState<TestCase[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
     // Deep copy to avoid mutating props
@@ -171,16 +173,27 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
   };
   
   const isConfigMissing = !devOpsConfig.pat || !devOpsConfig.organization || !devOpsConfig.project;
+  
+  const readOnlyClasses = "read-only:border-0 read-only:bg-transparent read-only:shadow-none read-only:focus-visible:ring-0 read-only:focus-visible:ring-offset-0 read-only:cursor-default";
 
   return (
     <Card className="w-full shadow-xl">
       <CardHeader>
-        <div className="flex items-center gap-2">
-          <ListChecks className="h-6 w-6 text-primary" />
-          <CardTitle className="font-headline">Casos de Prueba Generados</CardTitle>
+        <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+            <ListChecks className="h-6 w-6 text-primary" />
+            <CardTitle className="font-headline">Casos de Prueba Generados</CardTitle>
+            </div>
+             <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)}>
+                {isEditing ? <Check className="mr-2 h-4 w-4" /> : <Pencil className="mr-2 h-4 w-4" />}
+                {isEditing ? 'Finalizar Edición' : 'Editar'}
+            </Button>
         </div>
         <CardDescription>
-          Revisa y edita los casos de prueba. Ingresa el ID del PBI y envíalos a Azure DevOps.
+          {isEditing 
+            ? "Modifica los detalles de los casos de prueba a continuación."
+            : "Revisa los casos de prueba. Haz clic en 'Editar' para modificarlos."
+          }
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -188,23 +201,28 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
           <Card key={index} className="bg-muted/30">
             <CardHeader>
               <div className="flex items-start gap-3 w-full">
-                <Pencil className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
-                <div className="w-full space-y-1">
-                  <Input 
-                    value={tc.title}
-                    onChange={(e) => handleTestCaseChange(index, 'title', e.target.value)}
-                    className="text-lg font-semibold font-body border-0 shadow-none focus-visible:ring-1 focus-visible:ring-ring p-0 h-auto w-full bg-transparent"
-                    placeholder="Título del Caso de Prueba"
-                  />
-                  <Textarea
+                <Input 
+                  value={tc.title}
+                  readOnly={!isEditing}
+                  onChange={(e) => handleTestCaseChange(index, 'title', e.target.value)}
+                  className={cn(
+                    "text-lg font-semibold font-body p-0 h-auto w-full",
+                     readOnlyClasses
+                  )}
+                  placeholder="Título del Caso de Prueba"
+                />
+              </div>
+               <Textarea
                     value={tc.description}
+                    readOnly={!isEditing}
                     onChange={(e) => handleTestCaseChange(index, 'description', e.target.value)}
-                    className="text-sm text-muted-foreground pt-1 border-0 shadow-none focus-visible:ring-1 focus-visible:ring-ring w-full resize-none bg-transparent"
+                    className={cn(
+                      "text-sm text-muted-foreground pt-1 w-full resize-none",
+                      readOnlyClasses
+                    )}
                     placeholder="Descripción del Caso de Prueba"
                     rows={2}
                   />
-                </div>
-              </div>
             </CardHeader>
             <CardContent>
               <Table>
@@ -222,8 +240,9 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
                       <TableCell>
                         <Textarea 
                             value={step.action}
+                            readOnly={!isEditing}
                             onChange={(e) => handleStepChange(index, stepIndex, 'action', e.target.value)}
-                            className="w-full resize-y"
+                            className={cn("w-full resize-y", readOnlyClasses)}
                             placeholder="Acción..."
                             rows={3}
                         />
@@ -231,8 +250,9 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
                       <TableCell>
                         <Textarea 
                             value={step.expectedResult}
+                            readOnly={!isEditing}
                             onChange={(e) => handleStepChange(index, stepIndex, 'expectedResult', e.target.value)}
-                            className="w-full resize-y"
+                            className={cn("w-full resize-y", readOnlyClasses)}
                             placeholder="Resultado esperado..."
                             rows={3}
                         />

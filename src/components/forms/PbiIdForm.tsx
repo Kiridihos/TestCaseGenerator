@@ -19,9 +19,10 @@ import { Label } from "@/components/ui/label";
 import { useAzureDevOpsConfig } from "@/hooks/useApiKey";
 import { useToast } from "@/hooks/use-toast";
 import { generateTestCases, type GenerateTestCasesOutput } from "@/ai/flows/generate-test-cases";
-import { Loader2, Search, AlertTriangle, Wand2, Pencil } from "lucide-react";
+import { Loader2, Search, AlertTriangle, Wand2, Pencil, Check } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 const formSchema = z.object({
   pbiId: z.string().regex(/^\d+$/, "PBI ID must be a number.").min(1, "PBI ID cannot be empty."),
@@ -47,6 +48,7 @@ export function PbiIdForm({ setTestCasesOutput, setIsLoading, isLoading, setPbiI
   const { config: devOpsConfig, isConfigLoaded } = useAzureDevOpsConfig();
   const [fetchedData, setFetchedData] = useState<PbiDetails | null>(null);
   const [pbiId, setPbiId] = useState("");
+  const [isEditing, setIsEditing] = useState(false);
 
   const form = useForm<PbiIdFormValues>({
     resolver: zodResolver(formSchema),
@@ -132,6 +134,7 @@ export function PbiIdForm({ setTestCasesOutput, setIsLoading, isLoading, setPbiI
     setTestCasesOutput(null);
     setPbiIdForPush("");
     setFetchedData(null);
+    setIsEditing(false);
     
     toast({ title: "Obteniendo PBI de Azure DevOps...", description: `Buscando PBI con ID: ${values.pbiId}` });
     const pbiDetails = await fetchPbiDetails(values.pbiId);
@@ -141,7 +144,7 @@ export function PbiIdForm({ setTestCasesOutput, setIsLoading, isLoading, setPbiI
         setPbiId(values.pbiId);
         toast({
           title: "PBI Obtenido Correctamente",
-          description: "Revisa y edita la información, luego genera los casos de prueba."
+          description: "Revisa la información. Haz clic en 'Editar' para modificarla antes de generar los casos de prueba."
         })
     }
     setIsLoading(false);
@@ -188,34 +191,59 @@ export function PbiIdForm({ setTestCasesOutput, setIsLoading, isLoading, setPbiI
         setFetchedData(null);
         setPbiId("");
         setTestCasesOutput(null);
+        setIsEditing(false);
         form.reset();
     }
 
   const isConfigMissing = !devOpsConfig.pat || !devOpsConfig.organization || !devOpsConfig.project;
+  const readOnlyClasses = "read-only:border-0 read-only:bg-transparent read-only:shadow-none read-only:focus-visible:ring-0 read-only:focus-visible:ring-offset-0 read-only:cursor-default";
 
   if (fetchedData) {
     return (
         <div className="space-y-6">
+            <div className="flex justify-end">
+                 <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)}>
+                    {isEditing ? <Check className="mr-2 h-4 w-4" /> : <Pencil className="mr-2 h-4 w-4" />}
+                    {isEditing ? 'Finalizar Edición' : 'Editar Datos'}
+                </Button>
+            </div>
             <div className="space-y-2">
-                <Label htmlFor="pbiTitle" className="flex items-center gap-2 font-medium">
-                  <Pencil className="h-4 w-4 text-primary"/>
+                <Label htmlFor="pbiTitle" className="font-medium">
                   Title
                 </Label>
-                <Input id="pbiTitle" value={fetchedData.title} onChange={(e) => handleFetchedDataChange('title', e.target.value)} />
+                <Input 
+                    id="pbiTitle" 
+                    value={fetchedData.title} 
+                    onChange={(e) => handleFetchedDataChange('title', e.target.value)} 
+                    readOnly={!isEditing}
+                    className={cn(readOnlyClasses)}
+                />
             </div>
             <div className="space-y-2">
-                <Label htmlFor="pbiDesc" className="flex items-center gap-2 font-medium">
-                  <Pencil className="h-4 w-4 text-primary"/>
+                <Label htmlFor="pbiDesc" className="font-medium">
                   Description
                 </Label>
-                <Textarea id="pbiDesc" value={fetchedData.description} onChange={(e) => handleFetchedDataChange('description', e.target.value)} rows={4} className="resize-y"/>
+                <Textarea 
+                    id="pbiDesc" 
+                    value={fetchedData.description} 
+                    onChange={(e) => handleFetchedDataChange('description', e.target.value)} 
+                    rows={4} 
+                    className={cn("resize-y", readOnlyClasses)}
+                    readOnly={!isEditing}
+                />
             </div>
             <div className="space-y-2">
-                <Label htmlFor="pbiAc" className="flex items-center gap-2 font-medium">
-                  <Pencil className="h-4 w-4 text-primary"/>
+                <Label htmlFor="pbiAc" className="font-medium">
                   Acceptance Criteria
                 </Label>
-                <Textarea id="pbiAc" value={fetchedData.acceptanceCriteria} onChange={(e) => handleFetchedDataChange('acceptanceCriteria', e.target.value)} rows={8} className="resize-y"/>
+                <Textarea 
+                    id="pbiAc" 
+                    value={fetchedData.acceptanceCriteria} 
+                    onChange={(e) => handleFetchedDataChange('acceptanceCriteria', e.target.value)} 
+                    rows={8} 
+                    className={cn("resize-y", readOnlyClasses)}
+                    readOnly={!isEditing}
+                />
             </div>
             <div className="flex flex-col sm:flex-row gap-2 pt-2">
                 <Button onClick={handleGenerate} disabled={isLoading} className="w-full sm:w-auto">
