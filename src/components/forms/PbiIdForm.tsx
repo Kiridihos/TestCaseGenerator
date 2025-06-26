@@ -84,51 +84,67 @@ export function PbiIdForm({ setTestCasesOutput, setIsLoading, isLoading, setPbiI
 
         const data = await response.json();
         
-        const fetchImageAsDataUri = async (url: string): Promise<string> => {
-            const absoluteUrl = new URL(url, `https://dev.azure.com/${organization}`).href;
-            const imageResponse = await fetch(absoluteUrl, {
-                headers: { "Authorization": `Basic ${btoa(":" + pat)}` }
-            });
-            if (!imageResponse.ok) throw new Error(`Failed to fetch image: ${url}`);
-            const blob = await imageResponse.blob();
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result as string);
-                reader.onerror = reject;
-                reader.readAsDataURL(blob);
-            });
+        const fetchImageAsDataUri = async (url: string): Promise<string | null> => {
+            try {
+                const imageResponse = await fetch(url, {
+                    headers: { "Authorization": `Basic ${btoa(":" + pat)}` }
+                });
+                if (!imageResponse.ok) {
+                    console.error(`Failed to fetch image: ${url}, status: ${imageResponse.status}`);
+                    return null;
+                }
+                const blob = await imageResponse.blob();
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result as string);
+                    reader.onerror = (error) => {
+                        console.error("FileReader error:", error);
+                        resolve(null);
+                    };
+                    reader.readAsDataURL(blob);
+                });
+            } catch (error) {
+                console.error(`Network or other error fetching image ${url}:`, error);
+                return null;
+            }
         };
 
-        const parseRichTextField = async (html: string | undefined): Promise<{text: string, images: string[]}> => {
+        const parseRichTextFieldWithImages = async (html: string | undefined): Promise<{text: string, images: string[]}> => {
             if (!html) return { text: "", images: [] };
+
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
+            const text = doc.body.textContent || "";
             const imageElements = Array.from(doc.querySelectorAll('img'));
-            const imageUrls = imageElements.map(img => img.src).filter(src => !!src);
+            const imageUrls = imageElements.map(img => img.src).filter(Boolean);
             
-            let imageDataUris: string[] = [];
-            if(imageUrls.length > 0) {
-                const imagePromises = imageUrls.map(url => fetchImageAsDataUri(url));
-                imageDataUris = await Promise.all(imagePromises);
+            if (imageUrls.length === 0) {
+                return { text, images: [] };
             }
+            
+            const imagePromises = imageUrls.map(fetchImageAsDataUri);
+            const results = await Promise.all(imagePromises);
+            const imageDataUris = results.filter((uri): uri is string => uri !== null);
 
-            return {
-                text: doc.body.textContent || "",
-                images: imageDataUris
-            };
+            return { text, images: imageDataUris };
+        };
+        
+        const getTextFromRichField = (html: string | undefined): string => {
+            if (!html) return "";
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            return doc.body.textContent || "";
         };
 
         const acHtml = data.fields["Microsoft.VSTS.Common.AcceptanceCriteria"];
         const descHtml = data.fields["System.Description"];
-
-        const [acParsed, descParsedText] = await Promise.all([
-            parseRichTextField(acHtml),
-            parseRichTextField(descHtml).then(p => p.text)
-        ]);
+        
+        const acParsed = await parseRichTextFieldWithImages(acHtml);
+        const descriptionText = getTextFromRichField(descHtml);
         
         const details: PbiDetails = {
             title: data.fields["System.Title"] || "",
-            description: descParsedText,
+            description: descriptionText,
             acceptanceCriteria: acParsed.text,
             acceptanceCriteriaImages: acParsed.images,
         };
