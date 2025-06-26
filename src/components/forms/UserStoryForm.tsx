@@ -15,10 +15,9 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { generateTestCases, type GenerateTestCasesInput, type GenerateTestCasesOutput } from "@/ai/flows/generate-test-cases";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, FileText } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 const formSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters.").max(100, "Title must be at most 100 characters."),
@@ -32,9 +31,10 @@ interface UserStoryFormProps {
   setTestCasesOutput: (output: GenerateTestCasesOutput | null) => void;
   setIsLoading: (loading: boolean) => void;
   isLoading: boolean;
+  setPbiIdForPush: (id: string) => void;
 }
 
-export function UserStoryForm({ setTestCasesOutput, setIsLoading, isLoading }: UserStoryFormProps) {
+export function UserStoryForm({ setTestCasesOutput, setIsLoading, isLoading, setPbiIdForPush }: UserStoryFormProps) {
   const { toast } = useToast();
   const form = useForm<UserStoryFormValues>({
     resolver: zodResolver(formSchema),
@@ -48,6 +48,7 @@ export function UserStoryForm({ setTestCasesOutput, setIsLoading, isLoading }: U
   async function onSubmit(values: UserStoryFormValues) {
     setIsLoading(true);
     setTestCasesOutput(null);
+    setPbiIdForPush("");
     try {
       const input: GenerateTestCasesInput = {
         title: values.title,
@@ -81,81 +82,68 @@ export function UserStoryForm({ setTestCasesOutput, setIsLoading, isLoading }: U
   }
 
   return (
-    <Card className="w-full shadow-xl">
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <FileText className="h-6 w-6 text-primary" />
-          <CardTitle className="font-headline">User Story Details</CardTitle>
-        </div>
-        <CardDescription>
-          Enter the details of your user story to generate test cases.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="title"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Title</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter user story title" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="description"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Description</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Describe the user story..."
-                      className="resize-none"
-                      rows={4}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="acceptanceCriteria"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Acceptance Criteria</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="List the acceptance criteria..."
-                      className="resize-none"
-                      rows={6}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button type="submit" disabled={isLoading} className="w-full">
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                "Generate Test Cases"
-              )}
-            </Button>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <FormField
+          control={form.control}
+          name="title"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Title</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter user story title" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Describe the user story..."
+                  className="resize-none"
+                  rows={4}
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="acceptanceCriteria"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Acceptance Criteria</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="List the acceptance criteria..."
+                  className="resize-none"
+                  rows={6}
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <Button type="submit" disabled={isLoading} className="w-full">
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Generating...
+            </>
+          ) : (
+            "Generate Test Cases"
+          )}
+        </Button>
+      </form>
+    </Form>
   );
 }

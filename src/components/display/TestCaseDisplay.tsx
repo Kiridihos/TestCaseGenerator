@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { TestCase } from "@/ai/flows/generate-test-cases"; // Import TestCase type
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,13 +15,18 @@ import Link from "next/link";
 
 interface TestCaseDisplayProps {
   testCases: TestCase[]; // Updated to use the new TestCase type
+  initialPbiId?: string;
 }
 
-export function TestCaseDisplay({ testCases }: TestCaseDisplayProps) {
+export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProps) {
   const { config: devOpsConfig, isConfigLoaded } = useAzureDevOpsConfig();
   const { toast } = useToast();
-  const [pbiId, setPbiId] = useState("");
+  const [pbiId, setPbiId] = useState(initialPbiId || "");
   const [isPushing, setIsPushing] = useState(false);
+
+  useEffect(() => {
+    setPbiId(initialPbiId || "");
+  }, [initialPbiId]);
 
   const formatStepsToHtml = (steps: Array<{ action: string; expectedResult: string }>): string => {
     if (!steps || steps.length === 0) {
@@ -276,5 +281,3 @@ export function TestCaseDisplay({ testCases }: TestCaseDisplayProps) {
     </Card>
   );
 }
-
-    
