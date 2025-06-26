@@ -199,30 +199,38 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
       <CardContent className="space-y-6">
         {editableTestCases.map((tc, index) => (
           <Card key={index} className="bg-muted/30">
-            <CardHeader>
-              <div className="flex items-start gap-3 w-full">
+            <CardHeader className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor={`title-${index}`} className="font-medium">Título</Label>
                 <Input 
+                  id={`title-${index}`}
                   value={tc.title}
                   readOnly={!isEditing}
                   onChange={(e) => handleTestCaseChange(index, 'title', e.target.value)}
                   className={cn(
-                    "text-lg font-semibold font-body p-0 h-auto w-full",
-                     readOnlyClasses
+                    "w-full",
+                    readOnlyClasses,
+                    !isEditing && "p-0 h-auto text-lg font-semibold"
                   )}
                   placeholder="Título del Caso de Prueba"
                 />
               </div>
-               <Textarea
-                    value={tc.description}
-                    readOnly={!isEditing}
-                    onChange={(e) => handleTestCaseChange(index, 'description', e.target.value)}
-                    className={cn(
-                      "text-sm text-muted-foreground pt-1 w-full resize-none",
-                      readOnlyClasses
-                    )}
-                    placeholder="Descripción del Caso de Prueba"
-                    rows={2}
-                  />
+              <div className="space-y-1.5">
+                <Label htmlFor={`description-${index}`} className="font-medium">Descripción</Label>
+                <Textarea
+                  id={`description-${index}`}
+                  value={tc.description}
+                  readOnly={!isEditing}
+                  onChange={(e) => handleTestCaseChange(index, 'description', e.target.value)}
+                  className={cn(
+                    "w-full resize-none text-muted-foreground",
+                    readOnlyClasses,
+                    !isEditing ? "p-0" : "resize-y"
+                  )}
+                  placeholder="Descripción del Caso de Prueba"
+                  rows={2}
+                />
+              </div>
             </CardHeader>
             <CardContent>
               <Table>
