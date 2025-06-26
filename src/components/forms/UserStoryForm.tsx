@@ -17,7 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { generateTestCases, type GenerateTestCasesInput, type GenerateTestCasesOutput } from "@/ai/flows/generate-test-cases";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Pencil } from "lucide-react";
 
 const formSchema = z.object({
   title: z.string().min(5, "Title must be at least 5 characters.").max(100, "Title must be at most 100 characters."),
@@ -89,7 +89,10 @@ export function UserStoryForm({ setTestCasesOutput, setIsLoading, isLoading, set
           name="title"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Title</FormLabel>
+              <FormLabel className="flex items-center gap-2">
+                <Pencil className="h-4 w-4 text-primary" />
+                Title
+              </FormLabel>
               <FormControl>
                 <Input placeholder="Enter user story title" {...field} />
               </FormControl>
@@ -102,11 +105,14 @@ export function UserStoryForm({ setTestCasesOutput, setIsLoading, isLoading, set
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Description</FormLabel>
+              <FormLabel className="flex items-center gap-2">
+                <Pencil className="h-4 w-4 text-primary" />
+                Description
+              </FormLabel>
               <FormControl>
                 <Textarea
                   placeholder="Describe the user story..."
-                  className="resize-none"
+                  className="resize-y"
                   rows={4}
                   {...field}
                 />
@@ -120,12 +126,15 @@ export function UserStoryForm({ setTestCasesOutput, setIsLoading, isLoading, set
           name="acceptanceCriteria"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Acceptance Criteria</FormLabel>
+              <FormLabel className="flex items-center gap-2">
+                <Pencil className="h-4 w-4 text-primary" />
+                Acceptance Criteria
+              </FormLabel>
               <FormControl>
                 <Textarea
                   placeholder="List the acceptance criteria..."
-                  className="resize-none"
-                  rows={6}
+                  className="resize-y"
+                  rows={8}
                   {...field}
                 />
               </FormControl>

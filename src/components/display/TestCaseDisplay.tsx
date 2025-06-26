@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { TestCase } from "@/ai/flows/generate-test-cases"; // Import TestCase type
+import type { TestCase } from "@/ai/flows/generate-test-cases";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,11 +10,12 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAzureDevOpsConfig } from "@/hooks/useApiKey";
 import { useToast } from "@/hooks/use-toast";
-import { CheckCircle, ListChecks, UploadCloud, AlertTriangle, Loader2 } from "lucide-react";
+import { CheckCircle, ListChecks, UploadCloud, AlertTriangle, Loader2, Pencil } from "lucide-react";
 import Link from "next/link";
+import { Textarea } from "@/components/ui/textarea";
 
 interface TestCaseDisplayProps {
-  testCases: TestCase[]; // Updated to use the new TestCase type
+  testCases: TestCase[];
   initialPbiId?: string;
 }
 
@@ -23,17 +24,37 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
   const { toast } = useToast();
   const [pbiId, setPbiId] = useState(initialPbiId || "");
   const [isPushing, setIsPushing] = useState(false);
+  const [editableTestCases, setEditableTestCases] = useState<TestCase[]>([]);
+
+  useEffect(() => {
+    // Deep copy to avoid mutating props
+    setEditableTestCases(JSON.parse(JSON.stringify(testCases)));
+  }, [testCases]);
 
   useEffect(() => {
     setPbiId(initialPbiId || "");
   }, [initialPbiId]);
+
+  const handleTestCaseChange = (index: number, field: 'title' | 'description', value: string) => {
+    const newTestCases = [...editableTestCases];
+    newTestCases[index] = { ...newTestCases[index], [field]: value };
+    setEditableTestCases(newTestCases);
+  };
+
+  const handleStepChange = (testCaseIndex: number, stepIndex: number, field: 'action' | 'expectedResult', value: string) => {
+    const newTestCases = [...editableTestCases];
+    const newSteps = [...newTestCases[testCaseIndex].steps];
+    newSteps[stepIndex] = { ...newSteps[stepIndex], [field]: value };
+    newTestCases[testCaseIndex].steps = newSteps;
+    setEditableTestCases(newTestCases);
+  };
 
   const formatStepsToHtml = (steps: Array<{ action: string; expectedResult: string }>): string => {
     if (!steps || steps.length === 0) {
       return '<p>No se proporcionaron pasos detallados.</p>';
     }
 
-    let html = '<div>'; // Contenedor principal
+    let html = '<div>';
 
     steps.forEach((step, index) => {
       const actionText = step.action && step.action.trim() !== "" 
@@ -47,14 +68,13 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
       html += `<p><strong>Acción:</strong></p><p>${actionText}</p>`;
       html += `<p><strong>Resultado Esperado:</strong></p><p>${expectedResultText}</p>`;
       if (index < steps.length - 1) {
-        html += '<hr />'; // Separador entre pasos
+        html += '<hr />';
       }
     });
 
     html += '</div>';
     return html;
   };
-
 
   const handlePushToDevOps = async () => {
     if (!isConfigLoaded) {
@@ -97,49 +117,22 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
 
     const { pat, organization, project } = devOpsConfig;
 
-    for (const tc of testCases) {
+    for (const tc of editableTestCases) {
       const apiUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/$Test Case?api-version=7.1-preview.3`;
       
-      console.log(`Datos del TC a enviar para "${tc.title}":`, JSON.stringify(tc, null, 2));
       const htmlReproSteps = formatStepsToHtml(tc.steps);
-      console.log(`HTML Repro Steps para "${tc.title}":`, htmlReproSteps);
 
       const body = [
-        {
-          "op": "add",
-          "path": "/fields/System.Title",
-          "value": tc.title 
-        },
-        {
-          "op": "add",
-          "path": "/fields/System.Description", 
-          "value": tc.description ? tc.description.replace(/\n/g, '<br />') : ""
-        },
-        {
-          "op": "add",
-          "path": "/fields/Microsoft.VSTS.TCM.ReproSteps",
-          "value": htmlReproSteps
-        },
-        {
-          "op": "add",
-          "path": "/relations/-",
-          "value": {
-            "rel": "System.LinkTypes.Hierarchy-Reverse", 
-            "url": `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/${pbiId}`,
-            "attributes": {
-              "name": "Parent"
-            }
-          }
-        }
+        { "op": "add", "path": "/fields/System.Title", "value": tc.title },
+        { "op": "add", "path": "/fields/System.Description", "value": tc.description ? tc.description.replace(/\n/g, '<br />') : "" },
+        { "op": "add", "path": "/fields/Microsoft.VSTS.TCM.ReproSteps", "value": htmlReproSteps },
+        { "op": "add", "path": "/relations/-", "value": { "rel": "System.LinkTypes.Hierarchy-Reverse", "url": `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/${pbiId}`, "attributes": { "name": "Parent" } } }
       ];
 
       try {
         const response = await fetch(apiUrl, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json-patch+json",
-            "Authorization": `Basic ${btoa(":" + pat!)}`
-          },
+          headers: { "Content-Type": "application/json-patch+json", "Authorization": `Basic ${btoa(":" + pat!)}` },
           body: JSON.stringify(body)
         });
 
@@ -169,23 +162,11 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
     setIsPushing(false);
 
     if (successCount > 0 && errorCount === 0) {
-      toast({
-        title: "¡Envío Exitoso!",
-        description: `${successCount} caso(s) de prueba enviado(s) a Azure DevOps y enlazado(s) al PBI ${pbiId}.`,
-        action: <CheckCircle className="text-green-500" />,
-      });
+      toast({ title: "¡Envío Exitoso!", description: `${successCount} caso(s) de prueba enviado(s) a Azure DevOps y enlazado(s) al PBI ${pbiId}.`, action: <CheckCircle className="text-green-500" /> });
     } else if (successCount > 0 && errorCount > 0) {
-       toast({
-        title: "Éxito Parcial",
-        description: `${successCount} caso(s) de prueba enviado(s). ${errorCount} fallaron. Revisa la consola.`,
-        variant: "default",
-      });
+       toast({ title: "Éxito Parcial", description: `${successCount} caso(s) de prueba enviado(s). ${errorCount} fallaron. Revisa la consola.`, variant: "default" });
     } else if (errorCount > 0 && successCount === 0) {
-      toast({
-        title: "Envío Fallido",
-        description: `Todos los ${errorCount} caso(s) de prueba fallaron al enviar. Revisa la consola.`,
-        variant: "destructive",
-      });
+      toast({ title: "Envío Fallido", description: `Todos los ${errorCount} caso(s) de prueba fallaron al enviar. Revisa la consola.`, variant: "destructive" });
     }
   };
   
@@ -199,15 +180,31 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
           <CardTitle className="font-headline">Casos de Prueba Generados</CardTitle>
         </div>
         <CardDescription>
-          Revisa los casos de prueba generados. Ingresa el ID del PBI y envíalos a Azure DevOps.
+          Revisa y edita los casos de prueba. Ingresa el ID del PBI y envíalos a Azure DevOps.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        {testCases.map((tc, index) => (
+        {editableTestCases.map((tc, index) => (
           <Card key={index} className="bg-muted/30">
             <CardHeader>
-              <CardTitle className="text-lg font-semibold font-body">{tc.title}</CardTitle>
-              {tc.description && <CardDescription className="pt-1">{tc.description}</CardDescription>}
+              <div className="flex items-start gap-3 w-full">
+                <Pencil className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
+                <div className="w-full space-y-1">
+                  <Input 
+                    value={tc.title}
+                    onChange={(e) => handleTestCaseChange(index, 'title', e.target.value)}
+                    className="text-lg font-semibold font-body border-0 shadow-none focus-visible:ring-1 focus-visible:ring-ring p-0 h-auto w-full bg-transparent"
+                    placeholder="Título del Caso de Prueba"
+                  />
+                  <Textarea
+                    value={tc.description}
+                    onChange={(e) => handleTestCaseChange(index, 'description', e.target.value)}
+                    className="text-sm text-muted-foreground pt-1 border-0 shadow-none focus-visible:ring-1 focus-visible:ring-ring w-full resize-none bg-transparent"
+                    placeholder="Descripción del Caso de Prueba"
+                    rows={2}
+                  />
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <Table>
@@ -222,8 +219,24 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
                   {tc.steps && tc.steps.map((step, stepIndex) => (
                     <TableRow key={stepIndex}>
                       <TableCell className="font-medium text-center">{stepIndex + 1}</TableCell>
-                      <TableCell className="whitespace-pre-line">{step.action}</TableCell>
-                      <TableCell className="whitespace-pre-line">{step.expectedResult}</TableCell>
+                      <TableCell>
+                        <Textarea 
+                            value={step.action}
+                            onChange={(e) => handleStepChange(index, stepIndex, 'action', e.target.value)}
+                            className="w-full resize-y"
+                            placeholder="Acción..."
+                            rows={3}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Textarea 
+                            value={step.expectedResult}
+                            onChange={(e) => handleStepChange(index, stepIndex, 'expectedResult', e.target.value)}
+                            className="w-full resize-y"
+                            placeholder="Resultado esperado..."
+                            rows={3}
+                        />
+                      </TableCell>
                     </TableRow>
                   ))}
                   {(!tc.steps || tc.steps.length === 0) && (
@@ -262,7 +275,7 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
             <Button 
               onClick={handlePushToDevOps} 
               className="bg-accent hover:bg-accent/90 text-accent-foreground w-full sm:w-auto"
-              disabled={!isConfigLoaded || isConfigMissing || isPushing || !pbiId.trim() || testCases.length === 0}
+              disabled={!isConfigLoaded || isConfigMissing || isPushing || !pbiId.trim() || editableTestCases.length === 0}
             >
               {isPushing ? (
                 <>

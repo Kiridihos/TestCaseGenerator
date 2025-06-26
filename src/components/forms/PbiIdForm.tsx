@@ -19,7 +19,7 @@ import { Label } from "@/components/ui/label";
 import { useAzureDevOpsConfig } from "@/hooks/useApiKey";
 import { useToast } from "@/hooks/use-toast";
 import { generateTestCases, type GenerateTestCasesOutput } from "@/ai/flows/generate-test-cases";
-import { Loader2, Search, AlertTriangle, Wand2 } from "lucide-react";
+import { Loader2, Search, AlertTriangle, Wand2, Pencil } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -54,6 +54,13 @@ export function PbiIdForm({ setTestCasesOutput, setIsLoading, isLoading, setPbiI
       pbiId: "",
     },
   });
+
+  const handleFetchedDataChange = (field: keyof PbiDetails, value: string) => {
+    setFetchedData(prev => {
+      if (!prev) return null;
+      return { ...prev, [field]: value };
+    });
+  };
 
   async function fetchPbiDetails(id: string): Promise<PbiDetails | null> {
     if (!devOpsConfig.pat || !devOpsConfig.organization || !devOpsConfig.project) {
@@ -134,7 +141,7 @@ export function PbiIdForm({ setTestCasesOutput, setIsLoading, isLoading, setPbiI
         setPbiId(values.pbiId);
         toast({
           title: "PBI Obtenido Correctamente",
-          description: "Revisa la información y genera los casos de prueba."
+          description: "Revisa y edita la información, luego genera los casos de prueba."
         })
     }
     setIsLoading(false);
@@ -190,16 +197,25 @@ export function PbiIdForm({ setTestCasesOutput, setIsLoading, isLoading, setPbiI
     return (
         <div className="space-y-6">
             <div className="space-y-2">
-                <Label htmlFor="pbiTitle">Title</Label>
-                <Input id="pbiTitle" readOnly value={fetchedData.title} className="bg-muted/60"/>
+                <Label htmlFor="pbiTitle" className="flex items-center gap-2 font-medium">
+                  <Pencil className="h-4 w-4 text-primary"/>
+                  Title
+                </Label>
+                <Input id="pbiTitle" value={fetchedData.title} onChange={(e) => handleFetchedDataChange('title', e.target.value)} />
             </div>
             <div className="space-y-2">
-                <Label htmlFor="pbiDesc">Description</Label>
-                <Textarea id="pbiDesc" readOnly value={fetchedData.description} rows={4} className="resize-none bg-muted/60"/>
+                <Label htmlFor="pbiDesc" className="flex items-center gap-2 font-medium">
+                  <Pencil className="h-4 w-4 text-primary"/>
+                  Description
+                </Label>
+                <Textarea id="pbiDesc" value={fetchedData.description} onChange={(e) => handleFetchedDataChange('description', e.target.value)} rows={4} className="resize-y"/>
             </div>
             <div className="space-y-2">
-                <Label htmlFor="pbiAc">Acceptance Criteria</Label>
-                <Textarea id="pbiAc" readOnly value={fetchedData.acceptanceCriteria} rows={6} className="resize-none bg-muted/60"/>
+                <Label htmlFor="pbiAc" className="flex items-center gap-2 font-medium">
+                  <Pencil className="h-4 w-4 text-primary"/>
+                  Acceptance Criteria
+                </Label>
+                <Textarea id="pbiAc" value={fetchedData.acceptanceCriteria} onChange={(e) => handleFetchedDataChange('acceptanceCriteria', e.target.value)} rows={8} className="resize-y"/>
             </div>
             <div className="flex flex-col sm:flex-row gap-2 pt-2">
                 <Button onClick={handleGenerate} disabled={isLoading} className="w-full sm:w-auto">
@@ -211,7 +227,7 @@ export function PbiIdForm({ setTestCasesOutput, setIsLoading, isLoading, setPbiI
                 ) : (
                     <>
                       <Wand2 className="mr-2 h-4 w-4" />
-                      Generate Test Cases
+                      Generar Casos de Prueba
                     </>
                 )}
                 </Button>
