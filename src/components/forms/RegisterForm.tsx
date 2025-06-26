@@ -27,8 +27,8 @@ const formSchema = z.object({
   }),
 });
 
-export function LoginForm() {
-  const { signInWithEmail } = useAuth();
+export function RegisterForm() {
+  const { signUpWithEmail } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -42,7 +42,7 @@ export function LoginForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
     try {
-      await signInWithEmail(values.email, values.password);
+      await signUpWithEmail(values.email, values.password);
       // Redirect is handled by the page logic and AuthContext
     } catch (error) {
       // Error toast is handled in AuthContext
@@ -85,10 +85,10 @@ export function LoginForm() {
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Signing In...
+              Creating Account...
             </>
           ) : (
-            "Sign In"
+            "Create Account"
           )}
         </Button>
       </form>

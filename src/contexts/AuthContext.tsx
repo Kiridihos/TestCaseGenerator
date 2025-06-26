@@ -1,15 +1,15 @@
-
 "use client";
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
-import { User, onAuthStateChanged, signOut as firebaseSignOut, signInWithPopup, OAuthProvider } from 'firebase/auth';
+import { User, onAuthStateChanged, signOut as firebaseSignOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, AuthError } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useToast } from "@/hooks/use-toast";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  signInWithMicrosoft: () => Promise<void>;
+  signInWithEmail: (email: string, pass: string) => Promise<void>;
+  signUpWithEmail: (email: string, pass: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -29,28 +29,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => unsubscribe();
   }, []);
 
-  const signInWithMicrosoft = async () => {
+  const signInWithEmail = async (email: string, pass: string) => {
     setLoading(true);
-    const provider = new OAuthProvider('microsoft.com');
-    
-    // Optional: Add custom parameters or scopes
-    // provider.setCustomParameters({
-    //   // Forces account selection prompt.
-    //   prompt: 'select_account',
-    // });
-    // provider.addScope('mail.read');
-    
     try {
-      await signInWithPopup(auth, provider);
-      toast({ title: "Login Successful", description: "Welcome!" });
-    } catch (error: any) {
-      console.error("Microsoft sign-in error:", error);
+      await signInWithEmailAndPassword(auth, email, pass);
+      toast({ title: "Login Successful", description: "Welcome back!" });
+    } catch (error) {
+      console.error("Sign-in error:", error);
+      const authError = error as AuthError;
       toast({
         variant: "destructive",
         title: "Login Failed",
-        description: error.message || "An unexpected error occurred."
+        description: authError.message || "Invalid credentials. Please try again."
       });
-      // Re-throw the error to be caught by the calling component if needed
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const signUpWithEmail = async (email: string, pass: string) => {
+    setLoading(true);
+    try {
+      await createUserWithEmailAndPassword(auth, email, pass);
+      toast({ title: "Account Created", description: "Welcome! You have been signed in." });
+    } catch (error) {
+      console.error("Sign-up error:", error);
+      const authError = error as AuthError;
+      toast({
+        variant: "destructive",
+        title: "Registration Failed",
+        description: authError.message || "Could not create account. Please try again."
+      });
       throw error;
     } finally {
       setLoading(false);
@@ -78,7 +88,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const value = {
     user,
     loading,
-    signInWithMicrosoft,
+    signInWithEmail,
+    signUpWithEmail,
     signOut,
   };
 
