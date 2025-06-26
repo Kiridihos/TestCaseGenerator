@@ -16,21 +16,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function HomePage() {
   const [testCasesOutput, setTestCasesOutput] = useState<GenerateTestCasesOutput | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [pbiIdForPush, setPbiIdForPush] = useState<string>("");
-
-  // Lifted state from PbiIdForm
   const [fetchedPbiData, setFetchedPbiData] = useState<PbiDetails | null>(null);
+  
+  const [isManualLoading, setIsManualLoading] = useState(false);
+  const [isPbiLoading, setIsPbiLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'manual' | 'pbi'>('manual');
+  const [generationMode, setGenerationMode] = useState<'manual' | 'pbi' | null>(null);
   
   const { toast } = useToast();
   const { config: devOpsConfig, isConfigLoaded } = useAzureDevOpsConfig();
   const isConfigMissing = !isConfigLoaded || !devOpsConfig.pat || !devOpsConfig.organization || !devOpsConfig.project;
 
   const handleManualGenerate = async (values: GenerateTestCasesInput) => {
-    setIsLoading(true);
+    setIsManualLoading(true);
     setTestCasesOutput(null);
     setFetchedPbiData(null);
     setPbiIdForPush("");
+    setGenerationMode('manual');
 
     try {
       const result = await generateTestCases(values);
@@ -54,8 +57,9 @@ export default function HomePage() {
         description: "Failed to generate test cases. Please try again.",
       });
       setTestCasesOutput(null);
+      setGenerationMode(null);
     } finally {
-      setIsLoading(false);
+      setIsManualLoading(false);
     }
   };
   
@@ -125,10 +129,11 @@ export default function HomePage() {
   }
 
   const handlePbiFetch = async (pbiId: string) => {
-    setIsLoading(true);
+    setIsPbiLoading(true);
     setTestCasesOutput(null);
     setFetchedPbiData(null);
     setPbiIdForPush("");
+    setGenerationMode(null);
 
     toast({ title: "Obteniendo PBI de Azure DevOps...", description: `Buscando PBI con ID: ${pbiId}` });
     const pbiDetails = await fetchPbiDetails(pbiId);
@@ -141,21 +146,21 @@ export default function HomePage() {
           description: "Revisa la información. Haz clic en 'Editar' para modificarla antes de generar los casos de prueba."
         })
     }
-    setIsLoading(false);
+    setIsPbiLoading(false);
   }
 
   const handlePbiGenerate = async () => {
     if (!fetchedPbiData) return;
 
-    setIsLoading(true);
+    setIsPbiLoading(true);
     setTestCasesOutput(null);
+    setGenerationMode('pbi');
     
     toast({ title: "Generando Casos de Prueba...", description: "La IA está trabajando. Por favor espera." });
 
     try {
       const result = await generateTestCases(fetchedPbiData);
       setTestCasesOutput(result);
-      // pbiIdForPush is already set
       if (result.testCases.length === 0) {
         toast({
           title: "Generación Completa",
@@ -175,8 +180,9 @@ export default function HomePage() {
         description: "Falló la generación de casos de prueba. Por favor intenta de nuevo.",
       });
       setTestCasesOutput(null);
+      setGenerationMode(null);
     } finally {
-      setIsLoading(false);
+      setIsPbiLoading(false);
     }
   }
 
@@ -184,7 +190,21 @@ export default function HomePage() {
     setFetchedPbiData(null);
     setPbiIdForPush("");
     setTestCasesOutput(null);
+    setGenerationMode(null);
   }
+
+  const isLoading = isManualLoading || isPbiLoading;
+
+  const showResults = !isLoading && 
+                      generationMode === activeTab && 
+                      testCasesOutput && 
+                      testCasesOutput.testCases && 
+                      testCasesOutput.testCases.length > 0;
+
+  const showNoResultsMessage = !isLoading &&
+                               generationMode === activeTab &&
+                               testCasesOutput &&
+                               (!testCasesOutput.testCases || testCasesOutput.testCases.length === 0);
 
   return (
     <AppLayout>
@@ -200,7 +220,7 @@ export default function HomePage() {
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                <Tabs defaultValue="manual" className="w-full">
+                <Tabs defaultValue="manual" className="w-full" onValueChange={(value) => setActiveTab(value as 'manual' | 'pbi')}>
                     <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="manual">
                             <FileText className="mr-2 h-4 w-4" />
@@ -214,12 +234,12 @@ export default function HomePage() {
                     <TabsContent value="manual" className="pt-6">
                         <UserStoryForm 
                             onGenerate={handleManualGenerate} 
-                            isLoading={isLoading}
+                            isLoading={isManualLoading}
                         />
                     </TabsContent>
                     <TabsContent value="pbi" className="pt-6">
                         <PbiIdForm
-                            isLoading={isLoading}
+                            isLoading={isPbiLoading}
                             isConfigMissing={isConfigMissing}
                             fetchedData={fetchedPbiData}
                             onDataChange={setFetchedPbiData}
@@ -232,7 +252,7 @@ export default function HomePage() {
             </CardContent>
         </Card>
         
-        {(isLoading || (testCasesOutput && testCasesOutput.testCases && testCasesOutput.testCases.length > 0)) && <Separator className="my-8" />}
+        {(isLoading || showResults) && <Separator className="my-8" />}
 
         {isLoading && (
           <div className="flex flex-col items-center justify-center text-center py-10 bg-card p-6 rounded-lg shadow-md">
@@ -242,14 +262,14 @@ export default function HomePage() {
           </div>
         )}
         
-        {testCasesOutput && testCasesOutput.testCases && testCasesOutput.testCases.length > 0 && !isLoading && (
+        {showResults && (
           <TestCaseDisplay 
             testCases={testCasesOutput.testCases} 
             initialPbiId={pbiIdForPush}
           />
         )}
         
-        {testCasesOutput && (!testCasesOutput.testCases || testCasesOutput.testCases.length === 0) && !isLoading && (
+        {showNoResultsMessage && (
             <div className="text-center py-10 bg-card p-6 rounded-lg shadow-md">
                 <p className="text-lg font-medium">No se Generaron Casos de Prueba</p>
                 <p className="text-muted-foreground">La IA no pudo generar casos de prueba con la información proporcionada. Por favor, intenta refinar los detalles y vuelve a intentarlo.</p>
