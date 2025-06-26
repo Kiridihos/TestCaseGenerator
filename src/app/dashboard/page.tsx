@@ -1,7 +1,9 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import AppLayout from '@/components/layout/AppLayout';
 import { UserStoryForm } from '@/components/forms/UserStoryForm';
 import { PbiIdForm, type PbiDetails } from '@/components/forms/PbiIdForm';
@@ -15,6 +17,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function DashboardPage() {
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  
   const [testCasesOutput, setTestCasesOutput] = useState<GenerateTestCasesOutput | null>(null);
   const [pbiIdForPush, setPbiIdForPush] = useState<string>("");
   const [fetchedPbiData, setFetchedPbiData] = useState<PbiDetails | null>(null);
@@ -29,6 +34,20 @@ export default function DashboardPage() {
   const { toast } = useToast();
   const { config: devOpsConfig, isConfigLoaded } = useAzureDevOpsConfig();
   const isConfigMissing = !isConfigLoaded || !devOpsConfig.pat || !devOpsConfig.organization || !devOpsConfig.project;
+  
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/');
+    }
+  }, [user, authLoading, router]);
+
+  if (authLoading || !user) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   const handleManualGenerate = async (values: GenerateTestCasesInput) => {
     setIsManualLoading(true);
@@ -258,7 +277,7 @@ export default function DashboardPage() {
             </CardContent>
         </Card>
         
-        {(isLoading || showResults) && <Separator className="my-8" />}
+        {(isLoading || showResults || showNoResultsMessage) && <Separator className="my-8" />}
 
         {isLoading && (
           <div className="flex flex-col items-center justify-center text-center py-10 bg-card p-6 rounded-lg shadow-md">

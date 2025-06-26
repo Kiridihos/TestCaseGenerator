@@ -1,100 +1,59 @@
+
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { useToast } from "@/hooks/use-toast";
-import { useRouter } from "next/navigation";
-import { Loader2, LogIn } from "lucide-react";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { Loader2 } from "lucide-react";
 
-const formSchema = z.object({
-  email: z.string().email("Please enter a valid email address."),
-  password: z.string().min(1, "Password cannot be empty."),
-});
-
-type LoginFormValues = z.infer<typeof formSchema>;
+const MicrosoftIcon = () => (
+    <svg width="21" height="21" viewBox="0 0 21 21" className="mr-2 h-5 w-5">
+      <path fill="#f25022" d="M1 1h9v9H1z"></path>
+      <path fill="#00a4ef" d="M1 11h9v9H1z"></path>
+      <path fill="#7fba00" d="M11 1h9v9h-9z"></path>
+      <path fill="#ffb900" d="M11 11h9v9h-9z"></path>
+    </svg>
+  );
 
 export function LoginForm() {
-  const router = useRouter();
+  const { signInWithMicrosoft } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-      password: "",
-    },
-  });
-
-  function onSubmit(values: LoginFormValues) {
+  const handleSignIn = async () => {
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      // In a real app, you'd handle auth here.
-      // For now, we just redirect.
-      toast({
-        title: "Login Successful",
-        description: "Welcome back!",
-      });
-      router.push("/dashboard");
-    }, 1000);
-  }
+    try {
+      await signInWithMicrosoft();
+      // The redirect is handled by the AuthContext and page logic
+    } catch (error) {
+      // The error toast is handled within the signInWithMicrosoft function
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input type="email" placeholder="name@example.com" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Password</FormLabel>
-              <FormControl>
-                <Input type="password" placeholder="••••••••" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit" disabled={isLoading} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
-          {isLoading ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Signing In...
-            </>
-          ) : (
-             <>
-              <LogIn className="mr-2 h-4 w-4" />
-              Sign In
-            </>
-          )}
-        </Button>
-      </form>
-    </Form>
+    <div className="space-y-6">
+      <Button
+        type="button"
+        disabled={isLoading}
+        className="w-full bg-white text-black border border-gray-300 hover:bg-gray-50"
+        onClick={handleSignIn}
+      >
+        {isLoading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Signing In...
+          </>
+        ) : (
+          <>
+            <MicrosoftIcon />
+            Sign in with Microsoft
+          </>
+        )}
+      </Button>
+    </div>
   );
 }
