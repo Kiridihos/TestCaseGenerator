@@ -40,6 +40,7 @@ interface PbiDetails {
     title: string;
     description: string;
     acceptanceCriteria: string;
+    acceptanceCriteriaImages?: string[];
 }
 
 export function PbiIdForm({ setTestCasesOutput, setIsLoading, isLoading, setPbiIdForPush }: PbiIdFormProps) {
@@ -67,7 +68,7 @@ export function PbiIdForm({ setTestCasesOutput, setIsLoading, isLoading, setPbiI
     
     const { pat, organization, project } = devOpsConfig;
     const fields = "System.Title,System.Description,Microsoft.VSTS.Common.AcceptanceCriteria";
-    const apiUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/${id}?fields=${fields}&api-version=7.1-preview.3`;
+    const apiUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/${id}?$expand=all&fields=${fields}&api-version=7.1-preview.3`;
 
     try {
         const response = await fetch(apiUrl, {
@@ -83,25 +84,60 @@ export function PbiIdForm({ setTestCasesOutput, setIsLoading, isLoading, setPbiI
 
         const data = await response.json();
         
-        const stripHtml = (html: string | undefined): string => {
-            if (!html) return "";
-            // This component is client-side, so document is available.
-            // Using DOMParser is a safe and effective way to strip HTML and decode entities.
-            const doc = new DOMParser().parseFromString(html, 'text/html');
-            return doc.body.textContent || "";
+        const fetchImageAsDataUri = async (url: string): Promise<string> => {
+            const absoluteUrl = new URL(url, `https://dev.azure.com/${organization}`).href;
+            const imageResponse = await fetch(absoluteUrl, {
+                headers: { "Authorization": `Basic ${btoa(":" + pat)}` }
+            });
+            if (!imageResponse.ok) throw new Error(`Failed to fetch image: ${url}`);
+            const blob = await imageResponse.blob();
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.onerror = reject;
+                reader.readAsDataURL(blob);
+            });
         };
 
-        const details = {
+        const parseRichTextField = async (html: string | undefined): Promise<{text: string, images: string[]}> => {
+            if (!html) return { text: "", images: [] };
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const imageElements = Array.from(doc.querySelectorAll('img'));
+            const imageUrls = imageElements.map(img => img.src).filter(src => !!src);
+            
+            let imageDataUris: string[] = [];
+            if(imageUrls.length > 0) {
+                const imagePromises = imageUrls.map(url => fetchImageAsDataUri(url));
+                imageDataUris = await Promise.all(imagePromises);
+            }
+
+            return {
+                text: doc.body.textContent || "",
+                images: imageDataUris
+            };
+        };
+
+        const acHtml = data.fields["Microsoft.VSTS.Common.AcceptanceCriteria"];
+        const descHtml = data.fields["System.Description"];
+
+        const [acParsed, descParsedText] = await Promise.all([
+            parseRichTextField(acHtml),
+            parseRichTextField(descHtml).then(p => p.text)
+        ]);
+        
+        const details: PbiDetails = {
             title: data.fields["System.Title"] || "",
-            description: stripHtml(data.fields["System.Description"]),
-            acceptanceCriteria: stripHtml(data.fields["Microsoft.VSTS.Common.AcceptanceCriteria"]),
+            description: descParsedText,
+            acceptanceCriteria: acParsed.text,
+            acceptanceCriteriaImages: acParsed.images,
         };
 
-        if (!details.acceptanceCriteria) {
+        if (!details.acceptanceCriteria && (!details.acceptanceCriteriaImages || details.acceptanceCriteriaImages.length === 0)) {
             toast({
                 variant: "destructive",
                 title: "Faltan Criterios de Aceptación",
-                description: `El PBI ${id} no tiene Criterios de Aceptación definidos.`,
+                description: `El PBI ${id} no tiene Criterios de Aceptación de texto o imagen definidos.`,
             });
             return null;
         }
@@ -196,9 +232,24 @@ export function PbiIdForm({ setTestCasesOutput, setIsLoading, isLoading, setPbiI
                 <Textarea id="pbiDesc" readOnly value={fetchedData.description} rows={4} className="resize-none bg-muted/60"/>
             </div>
             <div className="space-y-2">
-                <Label htmlFor="pbiAc">Acceptance Criteria</Label>
+                <Label htmlFor="pbiAc">Acceptance Criteria (Text)</Label>
                 <Textarea id="pbiAc" readOnly value={fetchedData.acceptanceCriteria} rows={6} className="resize-none bg-muted/60"/>
             </div>
+            {fetchedData.acceptanceCriteriaImages && fetchedData.acceptanceCriteriaImages.length > 0 && (
+                <div className="space-y-2">
+                    <Label>Acceptance Criteria (Images)</Label>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 rounded-md border border-input p-3 bg-muted/60">
+                        {fetchedData.acceptanceCriteriaImages.map((imgDataUri, index) => (
+                            <img 
+                                key={index}
+                                src={imgDataUri} 
+                                alt={`Acceptance criteria image ${index + 1}`}
+                                className="rounded-md border object-contain"
+                            />
+                        ))}
+                    </div>
+                </div>
+            )}
             <div className="flex flex-col sm:flex-row gap-2 pt-2">
                 <Button onClick={handleGenerate} disabled={isLoading} className="w-full sm:w-auto">
                 {isLoading ? (

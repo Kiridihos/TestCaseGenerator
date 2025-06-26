@@ -18,6 +18,7 @@ const GenerateTestCasesInputSchema = z.object({
   acceptanceCriteria: z
     .string()
     .describe('The acceptance criteria for the user story.'),
+  acceptanceCriteriaImages: z.array(z.string()).optional().describe("A list of image data URIs from the acceptance criteria. Format: 'data:<mimetype>;base64,<encoded_data>'."),
 });
 export type GenerateTestCasesInput = z.infer<typeof GenerateTestCasesInputSchema>;
 
@@ -52,7 +53,7 @@ const prompt = ai.definePrompt({
   name: 'generateTestCasesPrompt',
   input: {schema: GenerateTestCasesInputSchema},
   output: {schema: GenerateTestCasesOutputSchema},
-  prompt: `Eres un experto generador de casos de prueba. Basándote en los detalles de la historia de usuario proporcionados, genera un conjunto completo de casos de prueba EN ESPAÑOL para asegurar que se cumplan los criterios de aceptación.
+  prompt: `Eres un experto generador de casos de prueba. Basándote en los detalles de la historia de usuario proporcionados, incluyendo el texto y las imágenes de los criterios de aceptación, genera un conjunto completo de casos de prueba EN ESPAÑOL para asegurar que se cumplan los criterios de aceptación.
 Cada caso de prueba debe ser un objeto con los siguientes campos:
 - title: Un título breve y descriptivo para este caso de prueba específico (ej: "Verificar inicio de sesión con credenciales válidas"). Este título debe ser conciso y no vacío.
 - description: Una breve descripción o resumen del propósito de este caso de prueba. No debe ser una cadena vacía.
@@ -64,7 +65,16 @@ Asegúrate de que todos los textos estén exclusivamente en idioma ESPAÑOL. Los
 Historia de Usuario:
 Título: {{{title}}}
 Descripción: {{{description}}}
-Criterios de Aceptación: {{{acceptanceCriteria}}}
+
+Criterios de Aceptación (Texto):
+{{{acceptanceCriteria}}}
+
+{{#if acceptanceCriteriaImages}}
+Criterios de Aceptación (Imágenes de referencia):
+{{#each acceptanceCriteriaImages}}
+- Imagen {{@index}}: {{media url=this}}
+{{/each}}
+{{/if}}
 
 Casos de Prueba (en ESPAÑOL, siguiendo la estructura JSON especificada en el esquema de salida, asegurando que ningún campo de texto relevante quede vacío):`,
 });
@@ -85,4 +95,3 @@ const generateTestCasesFlow = ai.defineFlow(
     return output;
   }
 );
-
