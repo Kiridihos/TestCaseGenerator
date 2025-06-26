@@ -24,6 +24,8 @@ export default function HomePage() {
   const [activeTab, setActiveTab] = useState<'manual' | 'pbi'>('manual');
   const [generationMode, setGenerationMode] = useState<'manual' | 'pbi' | null>(null);
   
+  const [manualFormValues, setManualFormValues] = useState<GenerateTestCasesInput>({ title: '', description: '', acceptanceCriteria: '' });
+
   const { toast } = useToast();
   const { config: devOpsConfig, isConfigLoaded } = useAzureDevOpsConfig();
   const isConfigMissing = !isConfigLoaded || !devOpsConfig.pat || !devOpsConfig.organization || !devOpsConfig.project;
@@ -93,8 +95,10 @@ export default function HomePage() {
         
         const getTextFromRichField = (html: string | undefined): string => {
             if (typeof window === 'undefined' || !html) return "";
+            // Replace non-breaking spaces with regular spaces
+            const sanitizedHtml = html.replace(/&nbsp;/g, ' ');
             const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
+            const doc = parser.parseFromString(sanitizedHtml, 'text/html');
             return doc.body.textContent || "";
         };
 
@@ -235,6 +239,8 @@ export default function HomePage() {
                         <UserStoryForm 
                             onGenerate={handleManualGenerate} 
                             isLoading={isManualLoading}
+                            values={manualFormValues}
+                            onValuesChange={setManualFormValues}
                         />
                     </TabsContent>
                     <TabsContent value="pbi" className="pt-6">

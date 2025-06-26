@@ -1,6 +1,7 @@
 
 "use client";
 
+import { useEffect, useRef } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -29,17 +30,30 @@ type UserStoryFormValues = z.infer<typeof formSchema>;
 interface UserStoryFormProps {
   onGenerate: (values: GenerateTestCasesInput) => void;
   isLoading: boolean;
+  values: UserStoryFormValues;
+  onValuesChange: (values: UserStoryFormValues) => void;
 }
 
-export function UserStoryForm({ onGenerate, isLoading }: UserStoryFormProps) {
+export function UserStoryForm({ onGenerate, isLoading, values, onValuesChange }: UserStoryFormProps) {
   const form = useForm<UserStoryFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      title: "",
-      description: "",
-      acceptanceCriteria: "",
-    },
+    defaultValues: values,
   });
+
+  const watchedValues = form.watch();
+  const isMounted = useRef(false);
+
+  useEffect(() => {
+    // This effect syncs the form's internal state up to the parent component.
+    // We use the isMounted ref to prevent this from running on the initial render,
+    // which avoids a potential infinite loop if not handled carefully.
+    if (isMounted.current) {
+      onValuesChange(watchedValues);
+    } else {
+      isMounted.current = true;
+    }
+  }, [watchedValues, onValuesChange]);
+
 
   function onSubmit(values: UserStoryFormValues) {
     onGenerate(values);
