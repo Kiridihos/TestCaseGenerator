@@ -61,7 +61,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         title: "Fallo de Inicio de Sesión",
         description: description
       });
-      throw error;
     } finally {
       setLoading(false);
     }
@@ -97,7 +96,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         title: "Fallo de Registro",
         description: description
       });
-      throw error;
     } finally {
       setLoading(false);
     }
