@@ -171,7 +171,7 @@ export function ConfigurationForm() {
                 variant="destructive"
                 onClick={handleClear}
                 disabled={isClearing || isSaving || isUsingDefaultConfig}
-                className="w-full sm:w-auto"
+                className="w-full"
             >
                 {isClearing ? (
                     <>
