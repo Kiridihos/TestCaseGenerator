@@ -1,87 +1,87 @@
-# Test Case Generator: On-Premise Deployment Guide
+# Generador de Casos de Prueba: Guía de Despliegue On-Premise
 
-This document provides a comprehensive guide for setting up, configuring, and deploying the Test Case Generator application on an on-premise server.
+Este documento proporciona una guía completa para configurar, y desplegar la aplicación Generador de Casos de Prueba en un servidor on-premise.
 
-## Table of Contents
-1. [Overview](#1-overview)
-2. [Prerequisites](#2-prerequisites)
-3. [Firebase Project Setup](#3-firebase-project-setup)
-4. [Azure DevOps Setup](#4-azure-devops-setup)
-5. [Application Configuration](#5-application-configuration)
-    - [Environment Variables (`workspace/.env`)](#environment-variables-workspaceenv)
-    - [Google AI / Genkit Authentication](#google-ai--genkit-authentication)
-6. [Installation](#6-installation)
-7. [Building and Running for Production](#7-building-and-running-for-production)
-    - [Building the Application](#building-the-application)
-    - [Running the Application](#running-the-application)
-    - [Using a Process Manager (Recommended)](#using-a-process-manager-recommended)
-8. [Development](#8-development)
-9. [Technology Stack](#9-technology-stack)
+## Tabla de Contenidos
+1. [Descripción General](#1-descripción-general)
+2. [Prerrequisitos](#2-prerrequisitos)
+3. [Configuración del Proyecto Firebase](#3-configuración-del-proyecto-firebase)
+4. [Configuración de Azure DevOps](#4-configuración-de-azure-devops)
+5. [Configuración de la Aplicación](#5-configuración-de-la-aplicación)
+    - [Variables de Entorno (`workspace/.env`)](#variables-de-entorno-workspaceenv)
+    - [Autenticación de Google AI / Genkit](#autenticación-de-google-ai--genkit)
+6. [Instalación](#6-instalación)
+7. [Compilar y Ejecutar para Producción](#7-compilar-y-ejecutar-para-producción)
+    - [Compilar la Aplicación](#compilar-la-aplicación)
+    - [Ejecutar la Aplicación](#ejecutar-la-aplicación)
+    - [Usar un Gestor de Procesos (Recomendado)](#usar-un-gestor-de-procesos-recomendado)
+8. [Desarrollo](#8-desarrollo)
+9. [Pila Tecnológica](#9-pila-tecnológica)
 
 ---
 
-## 1. Overview
+## 1. Descripción General
 
-The Test Case Generator is a web application built with Next.js that leverages AI to generate detailed test cases from user stories. It integrates with Firebase for user authentication and data storage, and with Azure DevOps to fetch work items and push the generated test cases.
+El Generador de Casos de Prueba es una aplicación web construida con Next.js que utiliza IA para generar casos de prueba detallados a partir de historias de usuario. Se integra con Firebase para la autenticación de usuarios y el almacenamiento de datos, y con Azure DevOps para obtener elementos de trabajo y enviar los casos de prueba generados.
 
-## 2. Prerequisites
+## 2. Prerrequisitos
 
-Before you begin, ensure your server has the following software installed:
-- **Node.js**: Version 20.x or later.
-- **npm**: (Usually comes with Node.js).
-- **Git**: For cloning the repository.
-- **Firebase Account**: You will need a Firebase project to handle user authentication and store user-specific configurations.
-- **Azure DevOps Account**: You need an account with access to an organization and project where work items are managed.
-- **Google Cloud Account**: For using the AI (Genkit) features, you'll need a Google Cloud project with the Vertex AI API enabled and a service account.
+Antes de comenzar, asegúrate de que tu servidor tenga el siguiente software instalado:
+- **Node.js**: Versión 20.x o posterior.
+- **npm**: (Generalmente viene con Node.js).
+- **Git**: Para clonar el repositorio.
+- **Cuenta de Firebase**: Necesitarás un proyecto de Firebase para manejar la autenticación de usuarios y almacenar configuraciones específicas del usuario.
+- **Cuenta de Azure DevOps**: Necesitas una cuenta con acceso a una organización y un proyecto donde se gestionan los elementos de trabajo.
+- **Cuenta de Google Cloud**: Para usar las funciones de IA (Genkit), necesitarás un proyecto de Google Cloud con la API de Vertex AI habilitada y una cuenta de servicio.
 
-## 3. Firebase Project Setup
+## 3. Configuración del Proyecto Firebase
 
-This application requires a Firebase project for its core functionality.
+Esta aplicación requiere un proyecto de Firebase para su funcionalidad principal.
 
-1.  **Create a Firebase Project**: Go to the [Firebase Console](https://console.firebase.google.com/) and create a new project.
-2.  **Enable Authentication**:
-    - In your project, go to the **Authentication** section.
-    - Click on the "Sign-in method" tab.
-    - Enable the **Email/Password** provider.
-3.  **Enable Firestore**:
-    - Go to the **Firestore Database** section.
-    - Click "Create database".
-    - Start in **production mode**. This is important for security.
-    - Choose a location for your database.
-4.  **Get Web App Credentials**:
-    - Go to your Project Settings (click the gear icon).
-    - In the "General" tab, scroll down to "Your apps".
-    - Click on the Web icon (`</>`) to create a new web app.
-    - Give it a nickname and register the app.
-    - Firebase will provide you with a `firebaseConfig` object. You will need these keys for the `.env` file.
+1.  **Crear un Proyecto de Firebase**: Ve a la [Consola de Firebase](https://console.firebase.google.com/) y crea un nuevo proyecto.
+2.  **Habilitar Autenticación**:
+    - En tu proyecto, ve a la sección de **Authentication**.
+    - Haz clic en la pestaña "Sign-in method" (Método de inicio de sesión).
+    - Habilita el proveedor **Email/Password** (Correo y contraseña).
+3.  **Habilitar Firestore**:
+    - Ve a la sección **Firestore Database**.
+    - Haz clic en "Crear base de datos".
+    - Inicia en **modo de producción**. Esto es importante por seguridad.
+    - Elige una ubicación para tu base de datos.
+4.  **Obtener Credenciales de la Aplicación Web**:
+    - Ve a la Configuración de tu Proyecto (haz clic en el ícono de engranaje).
+    - En la pestaña "General", desplázate hacia abajo hasta "Tus aplicaciones".
+    - Haz clic en el ícono Web (`</>`) para crear una nueva aplicación web.
+    - Dale un apodo y registra la aplicación.
+    - Firebase te proporcionará un objeto `firebaseConfig`. Necesitarás estas claves para el archivo `.env`.
 
-## 4. Azure DevOps Setup
+## 4. Configuración de Azure DevOps
 
-To connect to Azure DevOps, the application needs a Personal Access Token (PAT).
+Para conectarse a Azure DevOps, la aplicación necesita un Token de Acceso Personal (PAT).
 
-1.  **Create a Personal Access Token (PAT)**:
-    - In Azure DevOps, go to your **User settings** -> **Personal Access Tokens**.
-    - Create a new token with the following scopes (at minimum):
-        - **Work Items**: `Read & write`
-        - **Test Management**: `Read & write`
-    - **Important**: Copy the generated PAT immediately. You will not be able to see it again.
-2.  **Find Your Organization and Project Names**: These are typically part of the URL when you are browsing your project (e.g., `https://dev.azure.com/{organization}/{project}`).
+1.  **Crear un Token de Acceso Personal (PAT)**:
+    - En Azure DevOps, ve a tus **User settings** (Configuración de usuario) -> **Personal Access Tokens**.
+    - Crea un nuevo token con los siguientes ámbitos (como mínimo):
+        - **Work Items** (Elementos de trabajo): `Read & write` (Lectura y escritura)
+        - **Test Management** (Gestión de pruebas): `Read & write` (Lectura y escritura)
+    - **Importante**: Copia el PAT generado inmediatamente. No podrás verlo de nuevo.
+2.  **Encontrar los Nombres de tu Organización y Proyecto**: Estos suelen ser parte de la URL cuando navegas por tu proyecto (ej., `https://dev.azure.com/{organization}/{project}`).
 
-## 5. Application Configuration
+## 5. Configuración de la Aplicación
 
-### Environment Variables (`workspace/.env`)
+### Variables de Entorno (`workspace/.env`)
 
-All secret keys and configuration variables are managed in a single file: `workspace/.env`. **This is the only file you need to edit.**
+Todas las claves secretas y variables de configuración se gestionan en un único archivo: `workspace/.env`. **Este es el único archivo que necesitas editar.**
 
-1.  Navigate to the `workspace` directory in the project root.
-2.  Create a file named `.env`.
-3.  Copy and paste the following template into the file and fill it with your credentials.
+1.  Navega al directorio `workspace` en la raíz del proyecto.
+2.  Crea un archivo llamado `.env`.
+3.  Copia y pega la siguiente plantilla en el archivo y llénala con tus credenciales.
 
 ```env
 # ----------------------------------
-# FIREBASE CONFIGURATION (Required)
+# CONFIGURACIÓN DE FIREBASE (Requerido)
 # ----------------------------------
-# Get these values from your Firebase project's web app settings.
+# Obtén estos valores de la configuración de tu aplicación web en el proyecto de Firebase.
 NEXT_PUBLIC_FIREBASE_API_KEY=
 NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
 NEXT_PUBLIC_FIREBASE_PROJECT_ID=
@@ -90,107 +90,107 @@ NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
 NEXT_PUBLIC_FIREBASE_APP_ID=
 
 # ----------------------------------
-# AZURE DEVOPS CONFIGURATION (Optional - Global Default)
+# CONFIGURACIÓN DE AZURE DEVOPS (Opcional - Predeterminado Global)
 # ----------------------------------
-# If you fill these out, they will be the default configuration for all new users.
-# Users can override these with their own personal settings in the app's configuration page.
+# Si completas estos campos, serán la configuración predeterminada para todos los nuevos usuarios.
+# Los usuarios pueden sobrescribir esto con su propia configuración personal en la página de configuración de la aplicación.
 NEXT_PUBLIC_AZURE_DEVOPS_PAT=
 NEXT_PUBLIC_AZURE_DEVOPS_ORGANIZATION=
 NEXT_PUBLIC_AZURE_DEVOPS_PROJECT=
 
 # ----------------------------------
-# GOOGLE AI / GENKIT (Required for AI Features)
+# GOOGLE AI / GENKIT (Requerido para Funciones de IA)
 # ----------------------------------
-# Path to your Google Cloud service account key file.
-# See the "Google AI / Genkit Authentication" section below for details.
+# Ruta a tu archivo de clave de cuenta de servicio de Google Cloud.
+# Consulta la sección "Autenticación de Google AI / Genkit" a continuación para más detalles.
 GOOGLE_APPLICATION_CREDENTIALS=
 ```
 
-### Google AI / Genkit Authentication
+### Autenticación de Google AI / Genkit
 
-The AI features are powered by Genkit, which calls Google's Generative AI models. To authenticate on your on-premise server, you must use a **Service Account**.
+Las funciones de IA son impulsadas por Genkit, que llama a los modelos de IA Generativa de Google. Para autenticarte en tu servidor on-premise, debes usar una **Cuenta de Servicio**.
 
-1.  **Enable the Vertex AI API**: In your Google Cloud project, go to the APIs & Services Dashboard and enable the "Vertex AI API".
-2.  **Create a Service Account**:
-    - In Google Cloud IAM & Admin, go to "Service Accounts".
-    - Create a new service account. Give it the **Vertex AI User** role.
-    - After creating it, go to the "Keys" tab for that service account.
-    - Click "Add Key" -> "Create new key". Choose **JSON** as the type.
-    - A JSON file will be downloaded. This is your service account key.
-3.  **Configure the Server**:
-    - Place the downloaded JSON key file somewhere secure on your server (e.g., `/etc/secrets/gcp-key.json`).
-    - In your `workspace/.env` file, set the `GOOGLE_APPLICATION_CREDENTIALS` variable to the absolute path of that JSON file.
+1.  **Habilitar la API de Vertex AI**: En tu proyecto de Google Cloud, ve al Panel de APIs y Servicios y habilita la "Vertex AI API".
+2.  **Crear una Cuenta de Servicio**:
+    - En Google Cloud IAM y Administración, ve a "Cuentas de servicio".
+    - Crea una nueva cuenta de servicio. Asígnale el rol de **Usuario de Vertex AI**.
+    - Después de crearla, ve a la pestaña "Claves" de esa cuenta de servicio.
+    - Haz clic en "Agregar clave" -> "Crear nueva clave". Elige **JSON** como tipo.
+    - Se descargará un archivo JSON. Esta es tu clave de cuenta de servicio.
+3.  **Configurar el Servidor**:
+    - Coloca el archivo de clave JSON descargado en un lugar seguro en tu servidor (ej., `/etc/secrets/gcp-key.json`).
+    - En tu archivo `workspace/.env`, establece la variable `GOOGLE_APPLICATION_CREDENTIALS` a la ruta absoluta de ese archivo JSON.
 
-## 6. Installation
+## 6. Instalación
 
-Follow these steps on your server to install the application dependencies.
+Sigue estos pasos en tu servidor para instalar las dependencias de la aplicación.
 
 ```bash
-# 1. Clone the repository
-git clone <your-repository-url>
-cd <repository-folder>
+# 1. Clona el repositorio
+git clone <url-de-tu-repositorio>
+cd <carpeta-del-repositorio>
 
-# 2. Install dependencies
+# 2. Instala las dependencias
 npm install
 ```
 
-## 7. Building and Running for Production
+## 7. Compilar y Ejecutar para Producción
 
-### Building the Application
-This command compiles and optimizes the Next.js application for production.
+### Compilar la Aplicación
+Este comando compila y optimiza la aplicación Next.js para producción.
 
 ```bash
 npm run build
 ```
 
-### Running the Application
-This command starts the production server. The app will be available on port 3000 by default.
+### Ejecutar la Aplicación
+Este comando inicia el servidor de producción. La aplicación estará disponible en el puerto 3000 por defecto.
 
 ```bash
 npm run start
 ```
 
-### Using a Process Manager (Recommended)
-For a real on-premise deployment, you should use a process manager like **PM2** to keep the application running continuously and manage logs.
+### Usar un Gestor de Procesos (Recomendado)
+Para un despliegue on-premise real, deberías usar un gestor de procesos como **PM2** para mantener la aplicación ejecutándose continuamente y gestionar los registros.
 
-1.  **Install PM2 globally**:
+1.  **Instalar PM2 globalmente**:
     ```bash
     npm install pm2 -g
     ```
-2.  **Start the application with PM2**:
+2.  **Iniciar la aplicación con PM2**:
     ```bash
-    # The --name flag gives your process a memorable name.
+    # La bandera --name le da a tu proceso un nombre fácil de recordar.
     pm2 start npm --name "test-case-generator" -- run start
     ```
-3.  **Common PM2 Commands**:
+3.  **Comandos comunes de PM2**:
     ```bash
-    pm2 list          # List all running processes
-    pm2 stop 0        # Stop the process with ID 0
-    pm2 restart 0     # Restart the process
-    pm2 logs          # View logs for all processes
-    pm2 startup       # Configure PM2 to start on server reboot
+    pm2 list          # Lista todos los procesos en ejecución
+    pm2 stop 0        # Detiene el proceso con ID 0
+    pm2 restart 0     # Reinicia el proceso
+    pm2 logs          # Muestra los registros de todos los procesos
+    pm2 startup       # Configura PM2 para que se inicie al reiniciar el servidor
     ```
 
-## 8. Development
+## 8. Desarrollo
 
-To run the application in development mode:
+Para ejecutar la aplicación en modo de desarrollo:
 
-1.  **Terminal 1: Run the Next.js app**:
+1.  **Terminal 1: Ejecuta la aplicación Next.js**:
     ```bash
     npm run dev
     ```
-2.  **Terminal 2: Run the Genkit AI server**: The AI flows run in a separate process during development.
+2.  **Terminal 2: Ejecuta el servidor de IA de Genkit**: Los flujos de IA se ejecutan en un proceso separado durante el desarrollo.
     ```bash
     npm run genkit:watch
     ```
 
-## 9. Technology Stack
+## 9. Pila Tecnológica
 
 - **Framework**: Next.js
-- **UI**: React, ShadCN UI, Tailwind CSS
-- **Authentication**: Firebase Authentication
-- **Database**: Firestore (for user-specific settings)
-- **AI**: Genkit (using Google's Gemini models)
-- **State Management**: React Context & Custom Hooks
-- **Styling**: Tailwind CSS
-- **Form Handling**: React Hook Form, Zod
+- **UI (Interfaz de Usuario)**: React, ShadCN UI, Tailwind CSS
+- **Autenticación**: Firebase Authentication
+- **Base de Datos**: Firestore (para configuraciones específicas de usuario)
+- **IA**: Genkit (usando los modelos Gemini de Google)
+- **Gestión de Estado**: React Context & Custom Hooks
+- **Estilos**: Tailwind CSS
+- **Manejo de Formularios**: React Hook Form, Zod
