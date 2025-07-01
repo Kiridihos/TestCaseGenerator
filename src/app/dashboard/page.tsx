@@ -113,27 +113,37 @@ export default function DashboardPage() {
         const data = await response.json();
         
         const getTextFromRichField = (html: string | undefined): string => {
-            if (typeof window === 'undefined' || !html) return "";
+            if (!html) return "";
 
-            // To better preserve structure from rich text, we replace common
-            // block/break tags with newlines before stripping all HTML.
-            const withLineBreaks = html
-                .replace(/&nbsp;/g, ' ') // Handle non-breaking spaces
-                .replace(/<br\s*\/?>/gi, '\n') // Handle <br> tags
-                .replace(/<\/li>/gi, '\n') // Handle list items
-                .replace(/<\/p>/gi, '\n') // Handle paragraphs
-                .replace(/<div>/gi, '\n'); // Handle divs as line breaks
+            // This more robust conversion works consistently across browsers.
+            // 1. Replace block-level tags with newlines
+            let text = html
+              .replace(/<style[^>]*>.*<\/style>/gm, ' ') // Remove style blocks
+              .replace(/<script[^>]*>.*<\/script>/gm, ' ') // Remove script blocks
+              .replace(/<li>/gi, '\n* ') // Treat list items as bullet points
+              .replace(/<p>|<br>|<div>/gi, '\n'); // Convert <p>, <br>, <div> to newlines
 
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(withLineBreaks, 'text/html');
-            const text = doc.body.textContent || "";
+            // 2. Strip all remaining HTML tags
+            text = text.replace(/<[^>]+>/g, ' ');
 
-            // Clean up extra whitespace and multiple newlines
+            // 3. Decode HTML entities (like &nbsp;) and clean up whitespace
+            if (typeof window !== 'undefined') {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(text, 'text/html');
+                text = doc.body.textContent || "";
+            } else {
+                // Basic decoding for server-side or environments without DOMParser
+                 text = text.replace(/&nbsp;/g, ' ').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+            }
+
+            // 4. Normalize whitespace and newlines
             return text
                 .split('\n')
                 .map(line => line.trim())
                 .filter(line => line.length > 0)
-                .join('\n');
+                .join('\n')
+                .replace(/\s+/g, ' ') // Consolidate multiple spaces
+                .trim();
         };
 
         const acceptanceCriteria = getTextFromRichField(data.fields["Microsoft.VSTS.Common.AcceptanceCriteria"]);
