@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
@@ -11,7 +10,7 @@ interface AuthContextType {
   loading: boolean;
   isFirebaseConfigured: boolean;
   isFirestoreConfigured: boolean;
-  signInWithEmail: (email: string, pass: string) => Promise<void>;
+  signInWithEmail: (email: string, pass: string) => Promise<boolean>;
   signUpWithEmail: (email: string, pass: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -48,15 +47,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
   }
 
-  const signInWithEmail = async (email: string, pass: string) => {
+  const signInWithEmail = async (email: string, pass: string): Promise<boolean> => {
     if (!auth) {
       showConfigurationErrorToast();
-      return;
+      return false;
     }
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, pass);
       toast({ title: "Inicio de Sesión Exitoso", description: "¡Bienvenido de nuevo!" });
+      return true;
     } catch (error) {
       console.error("Error de inicio de sesión:", error);
       const authError = error as AuthError;
@@ -84,6 +84,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         title: "Fallo de Inicio de Sesión",
         description: description
       });
+      return false;
     } finally {
       setLoading(false);
     }

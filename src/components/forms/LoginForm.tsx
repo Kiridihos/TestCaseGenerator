@@ -41,15 +41,14 @@ export function LoginForm() {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-    try {
-      await signInWithEmail(values.email, values.password);
-      // Redirect is handled by the page logic and AuthContext
-    } catch (error) {
-      // Error toast is handled in AuthContext
-      console.error(error);
-    } finally {
-      setIsLoading(false);
+    const success = await signInWithEmail(values.email, values.password);
+
+    if (!success) {
+      // On failure, reset only the password field.
+      form.setValue('password', '');
     }
+    // On success, the page will redirect, so no need to reset the form.
+    setIsLoading(false);
   }
 
   return (
