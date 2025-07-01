@@ -21,10 +21,36 @@ import { useEffect, useState } from "react";
 import { KeyRound, CheckCircle, Building, FolderGit2, Loader2 } from "lucide-react";
 
 const formSchema = z.object({
-  pat: z.string().min(1, "Personal Access Token (PAT) cannot be empty."),
-  organization: z.string().min(1, "Organization name cannot be empty."),
-  project: z.string().min(1, "Project name cannot be empty."),
+  pat: z.string(),
+  organization: z.string(),
+  project: z.string(),
+}).superRefine((data, ctx) => {
+  const filledFieldsCount = [data.pat, data.organization, data.project].filter(Boolean).length;
+
+  // If some fields are filled, but not all (i.e., 1 or 2 fields are filled), add an issue.
+  if (filledFieldsCount > 0 && filledFieldsCount < 3) {
+    const errorMessage = "Se requieren los tres campos para guardar una configuración válida.";
+    if (!data.pat) {
+      ctx.addIssue({
+        path: ['pat'],
+        message: errorMessage,
+      });
+    }
+    if (!data.organization) {
+      ctx.addIssue({
+        path: ['organization'],
+        message: errorMessage,
+      });
+    }
+    if (!data.project) {
+      ctx.addIssue({
+        path: ['project'],
+        message: errorMessage,
+      });
+    }
+  }
 });
+
 
 type ConfigurationFormValues = z.infer<typeof formSchema>;
 
@@ -40,6 +66,8 @@ export function ConfigurationForm() {
       organization: "",
       project: "",
     },
+    // We want to re-validate on change when there's a superRefine error
+    mode: "onChange" 
   });
 
   useEffect(() => {
@@ -56,14 +84,19 @@ export function ConfigurationForm() {
     setIsSaving(true);
     try {
         const newConfig: AzureDevOpsConfig = {
-            pat: values.pat,
-            organization: values.organization,
-            project: values.project,
+            pat: values.pat || null,
+            organization: values.organization || null,
+            project: values.project || null,
         };
         await saveAzureDevOpsConfig(newConfig);
+        
+        const isConfigEmpty = !newConfig.pat && !newConfig.organization && !newConfig.project;
+
         toast({
-          title: "Configuration Saved",
-          description: "Your Azure DevOps configuration has been saved to your account.",
+          title: isConfigEmpty ? "Configuration Cleared" : "Configuration Saved",
+          description: isConfigEmpty 
+            ? "Your Azure DevOps configuration has been cleared."
+            : "Your Azure DevOps configuration has been saved to your account.",
           action: <CheckCircle className="text-green-500" />,
         });
     } catch (error) {
@@ -122,7 +155,7 @@ export function ConfigurationForm() {
                 <KeyRound className="h-5 w-5 text-primary" /> Azure DevOps Personal Access Token (PAT)
               </FormLabel>
               <FormControl>
-                <Input type="password" placeholder="Enter your Azure DevOps PAT" {...field} disabled={isSaving}/>
+                <Input type="password" placeholder="Enter your Azure DevOps PAT" {...field} value={field.value || ""} disabled={isSaving}/>
               </FormControl>
               <FormDescription>
                 This token will be stored securely with your account. Ensure it has Work Item read/write permissions.
@@ -140,7 +173,7 @@ export function ConfigurationForm() {
                 <Building className="h-5 w-5 text-primary" /> Azure DevOps Organization
               </FormLabel>
               <FormControl>
-                <Input placeholder="Enter your Azure DevOps Organization name" {...field} disabled={isSaving}/>
+                <Input placeholder="Enter your Azure DevOps Organization name" {...field} value={field.value || ""} disabled={isSaving}/>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -155,7 +188,7 @@ export function ConfigurationForm() {
                 <FolderGit2 className="h-5 w-5 text-primary" /> Azure DevOps Project
               </FormLabel>
               <FormControl>
-                <Input placeholder="Enter your Azure DevOps Project name" {...field} disabled={isSaving}/>
+                <Input placeholder="Enter your Azure DevOps Project name" {...field} value={field.value || ""} disabled={isSaving}/>
               </FormControl>
               <FormMessage />
             </FormItem>
