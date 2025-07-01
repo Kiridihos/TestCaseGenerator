@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -177,12 +176,12 @@ export function ConfigurationForm() {
                 {isClearing ? (
                     <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Limpiando...
+                        Restableciendo...
                     </>
                 ) : (
                     <>
                         <Trash className="mr-2 h-4 w-4" />
-                        Limpiar y Usar Predeterminado
+                        Restablecer
                     </>
                 )}
             </Button>
