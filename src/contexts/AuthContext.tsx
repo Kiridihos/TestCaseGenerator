@@ -52,7 +52,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       showConfigurationErrorToast();
       return false;
     }
-    setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, pass);
       toast({ title: "Inicio de Sesión Exitoso", description: "¡Bienvenido de nuevo!" });
@@ -85,8 +84,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         description: description
       });
       return false;
-    } finally {
-      setLoading(false);
     }
   };
   
@@ -95,7 +92,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       showConfigurationErrorToast();
       return;
     }
-    setLoading(true);
     try {
       await createUserWithEmailAndPassword(auth, email, pass);
       toast({ title: "Cuenta Creada", description: "¡Bienvenido! Has iniciado sesión." });
@@ -124,8 +120,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         title: "Fallo de Registro",
         description: description
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -134,7 +128,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       showConfigurationErrorToast();
       return;
     }
-    setLoading(true);
     try {
       await firebaseSignOut(auth);
       setUser(null);
@@ -146,8 +139,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         title: "Fallo al Cerrar Sesión",
         description: error.message
       });
-    } finally {
-      setLoading(false);
     }
   };
 
