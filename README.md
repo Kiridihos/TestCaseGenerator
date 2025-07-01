@@ -4,19 +4,20 @@ Este documento proporciona una guía completa para configurar, y desplegar la ap
 
 ## Tabla de Contenidos
 1. [Descripción General](#1-descripción-general)
-2. [Prerrequisitos](#2-prerrequisitos)
-3. [Configuración del Proyecto Firebase](#3-configuración-del-proyecto-firebase)
-4. [Configuración de Azure DevOps](#4-configuración-de-azure-devops)
-5. [Configuración de la Aplicación](#5-configuración-de-la-aplicación)
+2. [Arquitectura de IA: ¿Local o en la Nube?](#2-arquitectura-de-ia-local-o-en-la-nube)
+3. [Prerrequisitos](#3-prerrequisitos)
+4. [Configuración del Proyecto Firebase](#4-configuración-del-proyecto-firebase)
+5. [Configuración de Azure DevOps](#5-configuración-de-azure-devops)
+6. [Configuración de la Aplicación](#6-configuración-de-la-aplicación)
     - [Variables de Entorno (`workspace/.env`)](#variables-de-entorno-workspaceenv)
     - [Autenticación de Google AI / Genkit](#autenticación-de-google-ai--genkit)
-6. [Instalación](#6-instalación)
-7. [Compilar y Ejecutar para Producción](#7-compilar-y-ejecutar-para-producción)
+7. [Instalación](#7-instalación)
+8. [Compilar y Ejecutar para Producción](#8-compilar-y-ejecutar-para-producción)
     - [Compilar la Aplicación](#compilar-la-aplicación)
     - [Ejecutar la Aplicación](#ejecutar-la-aplicación)
     - [Usar un Gestor de Procesos (Recomendado)](#usar-un-gestor-de-procesos-recomendado)
-8. [Desarrollo](#8-desarrollo)
-9. [Pila Tecnológica](#9-pila-tecnológica)
+9. [Desarrollo](#9-desarrollo)
+10. [Pila Tecnológica](#10-pila-tecnológica)
 
 ---
 
@@ -24,7 +25,17 @@ Este documento proporciona una guía completa para configurar, y desplegar la ap
 
 El Generador de Casos de Prueba es una aplicación web construida con Next.js que utiliza IA para generar casos de prueba detallados a partir de historias de usuario. Se integra con Firebase para la autenticación de usuarios y el almacenamiento de datos, y con Azure DevOps para obtener elementos de trabajo y enviar los casos de prueba generados.
 
-## 2. Prerrequisitos
+## 2. Arquitectura de IA: ¿Local o en la Nube?
+
+Es importante aclarar que la aplicación **no ejecuta el modelo de Inteligencia Artificial en tu servidor local**. El modelo de IA (Gemini de Google) es un servicio que se consume desde la nube. La arquitectura funciona de la siguiente manera:
+
+- **Modelo de IA (Gemini)**: Es el "cerebro". Se encuentra en los servidores de Google Cloud y es quien procesa las solicitudes para generar los casos de prueba.
+- **Genkit (El Conector)**: Es el *toolkit* que se ejecuta en tu servidor. Actúa como un intermediario seguro que comunica tu aplicación con el modelo Gemini.
+- **Cuenta de Servicio (La "Llave" de Autenticación)**: Para que tu servidor (a través de Genkit) pueda usar Gemini, necesita autenticarse con Google Cloud. Esto no se hace con una simple API key, sino con una **Cuenta de Servicio**, un método más seguro diseñado para aplicaciones de servidor.
+
+Por lo tanto, el comando `npm run genkit:watch` inicia este conector local, no el modelo de IA en sí.
+
+## 3. Prerrequisitos
 
 Antes de comenzar, asegúrate de que tu servidor tenga el siguiente software instalado:
 - **Node.js**: Versión 20.x o posterior.
@@ -34,7 +45,7 @@ Antes de comenzar, asegúrate de que tu servidor tenga el siguiente software ins
 - **Cuenta de Azure DevOps**: Necesitas una cuenta con acceso a una organización y un proyecto donde se gestionan los elementos de trabajo.
 - **Cuenta de Google Cloud**: Para usar las funciones de IA (Genkit), necesitarás un proyecto de Google Cloud con la API de Vertex AI habilitada y una cuenta de servicio.
 
-## 3. Configuración del Proyecto Firebase
+## 4. Configuración del Proyecto Firebase
 
 Esta aplicación requiere un proyecto de Firebase para su funcionalidad principal.
 
@@ -55,7 +66,7 @@ Esta aplicación requiere un proyecto de Firebase para su funcionalidad principa
     - Dale un apodo y registra la aplicación.
     - Firebase te proporcionará un objeto `firebaseConfig`. Necesitarás estas claves para el archivo `.env`.
 
-## 4. Configuración de Azure DevOps
+## 5. Configuración de Azure DevOps
 
 Para conectarse a Azure DevOps, la aplicación necesita un Token de Acceso Personal (PAT).
 
@@ -67,7 +78,7 @@ Para conectarse a Azure DevOps, la aplicación necesita un Token de Acceso Perso
     - **Importante**: Copia el PAT generado inmediatamente. No podrás verlo de nuevo.
 2.  **Encontrar los Nombres de tu Organización y Proyecto**: Estos suelen ser parte de la URL cuando navegas por tu proyecto (ej., `https://dev.azure.com/{organization}/{project}`).
 
-## 5. Configuración de la Aplicación
+## 6. Configuración de la Aplicación
 
 ### Variables de Entorno (`workspace/.env`)
 
@@ -108,7 +119,7 @@ GOOGLE_APPLICATION_CREDENTIALS=
 
 ### Autenticación de Google AI / Genkit
 
-Las funciones de IA son impulsadas por Genkit, que llama a los modelos de IA Generativa de Google. Para autenticarte en tu servidor on-premise, debes usar una **Cuenta de Servicio**.
+Como se mencionó anteriormente, las funciones de IA son impulsadas por Genkit, que llama a los modelos de IA Generativa de Google en la nube. Para autenticarte en tu servidor on-premise, debes usar una **Cuenta de Servicio**.
 
 1.  **Habilitar la API de Vertex AI**: En tu proyecto de Google Cloud, ve al Panel de APIs y Servicios y habilita la "Vertex AI API".
 2.  **Crear una Cuenta de Servicio**:
@@ -121,7 +132,7 @@ Las funciones de IA son impulsadas por Genkit, que llama a los modelos de IA Gen
     - Coloca el archivo de clave JSON descargado en un lugar seguro en tu servidor (ej., `/etc/secrets/gcp-key.json`).
     - En tu archivo `workspace/.env`, establece la variable `GOOGLE_APPLICATION_CREDENTIALS` a la ruta absoluta de ese archivo JSON.
 
-## 6. Instalación
+## 7. Instalación
 
 Sigue estos pasos en tu servidor para instalar las dependencias de la aplicación.
 
@@ -134,7 +145,7 @@ cd <carpeta-del-repositorio>
 npm install
 ```
 
-## 7. Compilar y Ejecutar para Producción
+## 8. Compilar y Ejecutar para Producción
 
 ### Compilar la Aplicación
 Este comando compila y optimiza la aplicación Next.js para producción.
@@ -171,20 +182,21 @@ Para un despliegue on-premise real, deberías usar un gestor de procesos como **
     pm2 startup       # Configura PM2 para que se inicie al reiniciar el servidor
     ```
 
-## 8. Desarrollo
+## 9. Desarrollo
 
-Para ejecutar la aplicación en modo de desarrollo, la aplicación se divide en dos procesos separados: el servidor web de Next.js (para la interfaz de usuario) y el servidor de IA de Genkit. Necesitarás dos terminales para ejecutarlos simultáneamente.
+Para ejecutar la aplicación en modo de desarrollo, la aplicación se divide en dos procesos de servidor independientes que necesitan ejecutarse al mismo tiempo:
 
-1.  **Terminal 1: Ejecuta la aplicación Next.js**:
-    ```bash
-    npm run dev
-    ```
-2.  **Terminal 2: Ejecuta el servidor de IA de Genkit**: Los flujos de IA se ejecutan en este proceso separado, y el comando `watch` reiniciará el servidor automáticamente si haces cambios en los archivos de IA.
-    ```bash
-    npm run genkit:watch
-    ```
+1.  **Terminal 1: Ejecuta la aplicación Next.js (Interfaz de Usuario)**:
+    - **Comando:** `npm run dev`
+    - **Función:** Este servidor se encarga de todo lo visual: las páginas, los botones, los formularios, etc.
 
-## 9. Pila Tecnológica
+2.  **Terminal 2: Ejecuta el servidor de IA de Genkit (Conector de IA)**:
+    - **Comando:** `npm run genkit:watch`
+    - **Función:** Este servidor se dedica exclusivamente a comunicarse con la IA de Google. Cuando tu aplicación necesita generar casos de prueba, le envía una solicitud a este servidor.
+
+Necesitarás dos terminales porque cada comando inicia un proceso que "ocupa" esa terminal para ejecutarse y mostrar sus registros.
+
+## 10. Pila Tecnológica
 
 - **Framework**: Next.js
 - **UI (Interfaz de Usuario)**: React, ShadCN UI, Tailwind CSS
