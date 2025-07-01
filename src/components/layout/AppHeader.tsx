@@ -2,9 +2,10 @@
 "use client";
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Settings, TestTubeDiagonal, LogOut } from 'lucide-react';
+import { Settings, TestTubeDiagonal, LogOut, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -20,6 +21,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from "@/components/ui/avatar";
+import { cn } from '@/lib/utils';
 
 const UserNav = () => {
   const { user, signOut } = useAuth();
@@ -74,18 +76,58 @@ const UserNav = () => {
 
 export default function AppHeader() {
   const { user, loading } = useAuth();
+  const pathname = usePathname();
+  const [navigatingTo, setNavigatingTo] = useState<string | null>(null);
+
+  useEffect(() => {
+    setNavigatingTo(null);
+  }, [pathname]);
+
+  const handleNavigation = (path: string) => {
+    if (pathname !== path) {
+      setNavigatingTo(path);
+    }
+  };
+
+  const isNavigating = navigatingTo !== null;
 
   return (
     <header className="bg-card border-b sticky top-0 z-50 shadow-sm">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <Link href="/dashboard" className="flex items-center gap-2 text-xl font-headline font-semibold text-primary hover:text-primary/80 transition-colors">
-          <TestTubeDiagonal className="h-7 w-7" />
+        <Link 
+          href="/dashboard" 
+          className={cn(
+            "flex items-center gap-2 text-xl font-headline font-semibold text-primary hover:text-primary/80 transition-colors",
+            isNavigating && "pointer-events-none opacity-50"
+            )}
+          onClick={() => handleNavigation('/dashboard')}
+          aria-disabled={isNavigating}
+        >
+          {navigatingTo === '/dashboard' ? (
+             <Loader2 className="h-7 w-7 animate-spin" />
+          ) : (
+             <TestTubeDiagonal className="h-7 w-7" />
+          )}
           <span>Test Case Generator</span>
         </Link>
         <nav className="flex items-center gap-4">
-          <Link href="/configure" legacyBehavior passHref>
-            <Button variant="ghost" size="icon" aria-label="Configuration">
-              <Settings className="h-5 w-5" />
+          <Link 
+            href="/configure" 
+            onClick={() => handleNavigation('/configure')}
+            className={cn(isNavigating && "pointer-events-none")}
+            aria-disabled={isNavigating}
+          >
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              aria-label="Configuration"
+              disabled={isNavigating}
+            >
+              {navigatingTo === '/configure' ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Settings className="h-5 w-5" />
+              )}
             </Button>
           </Link>
           {loading ? (
