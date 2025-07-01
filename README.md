@@ -119,6 +119,8 @@ GOOGLE_APPLICATION_CREDENTIALS=
 
 ### Autenticación de Google AI / Genkit
 
+> **Nota para usuarios de Firebase Studio / App Hosting:** Si estás ejecutando esta aplicación dentro de Firebase Studio o la has desplegado en Firebase App Hosting, **no necesitas crear ni configurar este archivo JSON**. El entorno de Google Cloud gestiona la autenticación automáticamente. Estas instrucciones son para despliegues en servidores externos (on-premise).
+
 Como se mencionó anteriormente, las funciones de IA son impulsadas por Genkit, que llama a los modelos de IA Generativa de Google en la nube. Para autenticarte en tu servidor on-premise, debes usar una **Cuenta de Servicio**.
 
 1.  **Habilitar la API de Vertex AI**: En tu proyecto de Google Cloud, ve al Panel de APIs y Servicios y habilita la "Vertex AI API".
