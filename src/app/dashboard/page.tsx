@@ -114,11 +114,26 @@ export default function DashboardPage() {
         
         const getTextFromRichField = (html: string | undefined): string => {
             if (typeof window === 'undefined' || !html) return "";
-            // Replace non-breaking spaces with regular spaces
-            const sanitizedHtml = html.replace(/&nbsp;/g, ' ');
+
+            // To better preserve structure from rich text, we replace common
+            // block/break tags with newlines before stripping all HTML.
+            const withLineBreaks = html
+                .replace(/&nbsp;/g, ' ') // Handle non-breaking spaces
+                .replace(/<br\s*\/?>/gi, '\n') // Handle <br> tags
+                .replace(/<\/li>/gi, '\n') // Handle list items
+                .replace(/<\/p>/gi, '\n') // Handle paragraphs
+                .replace(/<div>/gi, '\n'); // Handle divs as line breaks
+
             const parser = new DOMParser();
-            const doc = parser.parseFromString(sanitizedHtml, 'text/html');
-            return doc.body.textContent || "";
+            const doc = parser.parseFromString(withLineBreaks, 'text/html');
+            const text = doc.body.textContent || "";
+
+            // Clean up extra whitespace and multiple newlines
+            return text
+                .split('\n')
+                .map(line => line.trim())
+                .filter(line => line.length > 0)
+                .join('\n');
         };
 
         const acceptanceCriteria = getTextFromRichField(data.fields["Microsoft.VSTS.Common.AcceptanceCriteria"]);
@@ -239,7 +254,7 @@ export default function DashboardPage() {
                     Generador de Casos de Prueba
                 </CardTitle>
                 <CardDescription>
-                    Selecciona un método para generar casos de prueba. Puedes ingresar los detalles manually o obtenerlos directamente desde un PBI en Azure DevOps.
+                    Selecciona un método para generar casos de prueba. Puedes ingresar los detalles manualmente o obtenerlos directamente desde un PBI en Azure DevOps.
                 </CardDescription>
             </CardHeader>
             <CardContent>
