@@ -31,7 +31,7 @@ Es importante aclarar que la aplicación **no ejecuta el modelo de Inteligencia 
 
 - **Modelo de IA (Gemini)**: Es el "cerebro". Se encuentra en los servidores de Google Cloud y es quien procesa las solicitudes para generar los casos de prueba.
 - **Genkit (El Conector)**: Es el *toolkit* que se ejecuta en tu servidor. Actúa como un intermediario seguro que comunica tu aplicación con el modelo Gemini.
-- **Cuenta de Servicio (La "Llave" de Autenticación)**: Para que tu servidor (a través de Genkit) pueda usar Gemini, necesita autenticarse con Google Cloud. Esto no se hace con una simple API key, sino con una **Cuenta de Servicio**, un método más seguro diseñado para aplicaciones de servidor.
+- **Autenticación (La "Llave")**: Para que tu servidor pueda usar Gemini, necesita autenticarse con Google Cloud. Esto se puede hacer de dos formas: con una **Clave de API** (más simple) o con una **Cuenta de Servicio** (más segura).
 
 Por lo tanto, el comando `npm run genkit:watch` inicia este conector local, no el modelo de IA en sí.
 
@@ -43,7 +43,7 @@ Antes de comenzar, asegúrate de que tu servidor tenga el siguiente software ins
 - **Git**: Para clonar el repositorio.
 - **Cuenta de Firebase**: Necesitarás un proyecto de Firebase para manejar la autenticación de usuarios y almacenar configuraciones específicas del usuario.
 - **Cuenta de Azure DevOps**: Necesitas una cuenta con acceso a una organización y un proyecto donde se gestionan los elementos de trabajo.
-- **Cuenta de Google Cloud**: Para usar las funciones de IA (Genkit), necesitarás un proyecto de Google Cloud con la API de Vertex AI habilitada y una cuenta de servicio.
+- **Cuenta de Google para IA**: Para usar las funciones de IA (Genkit), necesitarás una clave de API de Google AI Studio o un proyecto de Google Cloud con la API de Vertex AI habilitada y una cuenta de servicio.
 
 ## 4. Configuración del Proyecto Firebase
 
@@ -121,19 +121,41 @@ NEXT_PUBLIC_AZURE_DEVOPS_ORGANIZATION=
 NEXT_PUBLIC_AZURE_DEVOPS_PROJECT=
 
 # ----------------------------------
-# GOOGLE AI / GENKIT (Requerido para Funciones de IA en servidor on-premise)
+# GOOGLE AI / GENKIT (Requerido - Elige UNA opción)
 # ----------------------------------
+# La aplicación necesita autenticarse con Google para usar la IA.
+# Elige solo UNO de los siguientes métodos. El método de la API Key es más simple.
+# El método de Cuenta de Servicio es más seguro para producción.
+
+# --- Opción 1: Clave de API (Más simple) ---
+# Obtén una clave desde Google AI Studio: https://aistudio.google.com/app/apikey
+# Descomenta y pega tu clave aquí.
+# GOOGLE_API_KEY=
+
+# --- Opción 2: Cuenta de Servicio (Más seguro) ---
 # Ruta a tu archivo de clave de cuenta de servicio de Google Cloud.
-# Consulta la sección "Autenticación de Google AI / Genkit" a continuación para más detalles.
+# Si usas este método, deja GOOGLE_API_KEY comentado.
+# Consulta la sección "Autenticación de Google AI / Genkit" para más detalles.
 GOOGLE_APPLICATION_CREDENTIALS=
 ```
 
 ### Autenticación de Google AI / Genkit
 
-> **Nota para usuarios de Firebase Studio / App Hosting:** Si estás ejecutando esta aplicación dentro de Firebase Studio o la has desplegado en Firebase App Hosting, **no necesitas crear ni configurar este archivo JSON**. El entorno de Google Cloud gestiona la autenticación automáticamente. Estas instrucciones son para despliegues en servidores externos (on-premise).
+> **Nota para usuarios de Firebase Studio / App Hosting:** Si estás ejecutando esta aplicación dentro de Firebase Studio o la has desplegado en Firebase App Hosting, **no necesitas configurar credenciales de IA**. El entorno de Google Cloud gestiona la autenticación automáticamente. Las siguientes instrucciones son para despliegues en servidores externos (on-premise).
 
-Como se mencionó anteriormente, las funciones de IA son impulsadas por Genkit, que llama a los modelos de IA Generativa de Google en la nube. Para autenticarte en tu servidor on-premise, debes usar una **Cuenta de Servicio**.
+Para usar las funciones de IA, tu aplicación necesita autenticarse con Google. Tienes dos opciones:
 
+#### Opción 1: Clave de API (Simple)
+
+Este es el método más rápido para empezar.
+1.  Ve a [Google AI Studio](https://aistudio.google.com/app/apikey).
+2.  Haz clic en "Create API key in new project".
+3.  Copia la clave generada.
+4.  En tu archivo `.env`, descomenta la línea `GOOGLE_API_KEY` y pega tu clave allí.
+
+#### Opción 2: Cuenta de Servicio (Recomendado para Producción)
+
+Este método es más seguro y robusto, ideal para aplicaciones en producción.
 1.  **Habilitar la API de Vertex AI**: En tu proyecto de Google Cloud, ve al Panel de APIs y Servicios y habilita la "Vertex AI API".
 2.  **Crear una Cuenta de Servicio**:
     - En Google Cloud IAM y Administración, ve a "Cuentas de servicio".
@@ -143,7 +165,7 @@ Como se mencionó anteriormente, las funciones de IA son impulsadas por Genkit, 
     - Se descargará un archivo JSON. Esta es tu clave de cuenta de servicio.
 3.  **Configurar el Servidor**:
     - Coloca el archivo de clave JSON descargado en un lugar seguro en tu servidor (ej., `/etc/secrets/gcp-key.json`).
-    - En tu archivo `.env`, establece la variable `GOOGLE_APPLICATION_CREDENTIALS` a la ruta absoluta de ese archivo JSON.
+    - En tu archivo `.env`, establece la variable `GOOGLE_APPLICATION_CREDENTIALS` a la ruta absoluta de ese archivo JSON. Asegúrate de que la variable `GOOGLE_API_KEY` esté comentada o vacía.
 
 ## 7. Instalación
 
