@@ -12,6 +12,11 @@ export interface AzureDevOpsConfig {
   project: string | null;
 }
 
+export interface ConfigResult {
+    success: boolean;
+    error?: string;
+}
+
 const emptyConfig: AzureDevOpsConfig = { pat: null, organization: null, project: null };
 
 // Helper to add a timeout to a promise
@@ -46,7 +51,6 @@ export function useAzureDevOpsConfig() {
         setIsConfigLoaded(false);
         try {
           const docRef = doc(db, "userConfigs", user.uid);
-          // Use timeout for fetching as well to prevent hangs on load
           const docSnap = await withTimeout(getDoc(docRef), 10000);
           if (docSnap.exists()) {
             setConfig(docSnap.data() as AzureDevOpsConfig);
@@ -60,7 +64,6 @@ export function useAzureDevOpsConfig() {
           setIsConfigLoaded(true);
         }
       } else {
-        // No user or db, so reset config and consider it "loaded"
         setConfig(emptyConfig);
         setIsConfigLoaded(true);
       }
@@ -69,25 +72,50 @@ export function useAzureDevOpsConfig() {
     fetchConfig();
   }, [user]);
 
-  const saveAzureDevOpsConfig = useCallback(async (newConfig: AzureDevOpsConfig) => {
+  const saveAzureDevOpsConfig = useCallback(async (newConfig: AzureDevOpsConfig): Promise<ConfigResult> => {
     if (!user || !db) {
-      console.warn("Cannot save config, no user is logged in or DB is not available.");
-      throw new Error("User not authenticated or database not available.");
+      const errorMsg = "User not authenticated or database not available.";
+      console.warn("Cannot save config:", errorMsg);
+      return { success: false, error: errorMsg };
     }
-    const docRef = doc(db, "userConfigs", user.uid);
-    // Use the timeout helper here. 10 seconds is a reasonable timeout.
-    await withTimeout(setDoc(docRef, newConfig, { merge: true }), 10000);
-    setConfig(newConfig);
+    try {
+      const docRef = doc(db, "userConfigs", user.uid);
+      await withTimeout(setDoc(docRef, newConfig, { merge: true }), 10000);
+      setConfig(newConfig);
+      return { success: true };
+    } catch (error) {
+      console.error("Failed to save config to Firestore:", error);
+      let errorMsg = "Could not save your configuration. Please try again.";
+      if (error instanceof Error) {
+        if (error.message.includes('permission-denied')) {
+          errorMsg = "Permission Denied. Please check your Firestore security rules to allow writes.";
+        } else if (error.message.includes('timed out')) {
+          errorMsg = "The request timed out. Please check your internet connection and ensure Firestore is enabled in your Firebase project console.";
+        }
+      }
+      return { success: false, error: errorMsg };
+    }
   }, [user]);
 
-  const clearAzureDevOpsConfig = useCallback(async () => {
+  const clearAzureDevOpsConfig = useCallback(async (): Promise<ConfigResult> => {
     if (!user || !db) {
-      console.warn("Cannot clear config, no user is logged in or DB is not available.");
-      throw new Error("User not authenticated or database not available.");
+      const errorMsg = "User not authenticated or database not available.";
+      console.warn("Cannot clear config:", errorMsg);
+      return { success: false, error: errorMsg };
     }
-    const docRef = doc(db, "userConfigs", user.uid);
-    await withTimeout(deleteDoc(docRef), 10000);
-    setConfig(emptyConfig);
+    try {
+      const docRef = doc(db, "userConfigs", user.uid);
+      await withTimeout(deleteDoc(docRef), 10000);
+      setConfig(emptyConfig);
+      return { success: true };
+    } catch (error) {
+      console.error("Failed to clear config from Firestore:", error);
+      let errorMsg = "Could not clear your configuration. Please try again.";
+      if (error instanceof Error && error.message.includes('timed out')) {
+          errorMsg = "The request timed out. Please check your internet connection.";
+      }
+      return { success: false, error: errorMsg };
+    }
   }, [user]);
 
   return { config, saveAzureDevOpsConfig, clearAzureDevOpsConfig, isConfigLoaded };

@@ -15,7 +15,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useAzureDevOpsConfig, type AzureDevOpsConfig } from "@/hooks/useApiKey";
+import { useAzureDevOpsConfig } from "@/hooks/useApiKey";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
 import { KeyRound, CheckCircle, Building, FolderGit2, Loader2, AlertTriangle } from "lucide-react";
@@ -33,7 +33,7 @@ type ConfigurationFormValues = z.infer<typeof formSchema>;
 
 export function ConfigurationForm() {
   const { config, saveAzureDevOpsConfig, clearAzureDevOpsConfig, isConfigLoaded } = useAzureDevOpsConfig();
-  const { auth, isFirebaseConfigured } = useAuth();
+  const { user, isFirebaseConfigured } = useAuth();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
 
@@ -59,66 +59,46 @@ export function ConfigurationForm() {
 
   async function onSubmit(values: ConfigurationFormValues) {
     setIsSaving(true);
-    try {
-        const newConfig: AzureDevOpsConfig = {
-            pat: values.pat,
-            organization: values.organization,
-            project: values.project,
-        };
-        await saveAzureDevOpsConfig(newConfig);
-        
-        toast({
-          title: "Configuration Saved",
-          description: "Your Azure DevOps configuration has been saved to your account.",
-          action: <CheckCircle className="text-green-500" />,
-        });
-    } catch (error) {
-        console.error("Failed to save configuration:", error);
-        
-        let description = "Could not save your configuration. Please try again.";
-        if (error instanceof Error) {
-            if (error.message.includes('permission-denied')) {
-                description = "Permission Denied. Please check your Firestore security rules to allow writes.";
-            } else if (error.message.includes('timed out')) {
-                description = "The request timed out. Please check your internet connection and ensure Firestore is enabled in your Firebase project console.";
-            } else {
-                description = `An unexpected error occurred. Check the console for details.`;
-            }
-        }
+    const result = await saveAzureDevOpsConfig(values);
 
-        toast({
-            variant: "destructive",
-            title: "Save Error",
-            description: description,
-            duration: 9000,
-        });
-    } finally {
-        setIsSaving(false);
+    if (result.success) {
+      toast({
+        title: "Configuration Saved",
+        description: "Your Azure DevOps configuration has been saved to your account.",
+        action: <CheckCircle className="text-green-500" />,
+      });
+    } else {
+      toast({
+          variant: "destructive",
+          title: "Save Error",
+          description: result.error,
+          duration: 9000,
+      });
     }
+    setIsSaving(false);
   }
 
   async function handleClearConfig() {
     setIsSaving(true);
-    try {
-        await clearAzureDevOpsConfig();
+    const result = await clearAzureDevOpsConfig();
+
+    if (result.success) {
         form.reset({ pat: "", organization: "", project: "" });
         toast({
             title: "Configuration Cleared",
             description: "Your Azure DevOps configuration has been cleared.",
         });
-    } catch (error) {
-        console.error("Failed to clear configuration:", error);
+    } else {
         toast({
             variant: "destructive",
             title: "Error",
-            description: "Could not clear your configuration. Please try again.",
+            description: result.error,
         });
-    } finally {
-        setIsSaving(false);
     }
+    setIsSaving(false);
   }
 
-  if (!isFirebaseConfigured || !auth) {
+  if (!isFirebaseConfigured || !user) {
     return (
         <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
