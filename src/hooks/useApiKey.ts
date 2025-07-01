@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
+import { useToast } from './use-toast';
 
 export interface AzureDevOpsConfig {
   pat: string;
@@ -18,6 +19,7 @@ export function useAzureDevOpsConfig() {
   const [config, setConfig] = useState<AzureDevOpsConfig>(emptyConfig);
   const [isConfigLoaded, setIsConfigLoaded] = useState(false);
   const [isUsingDefaultConfig, setIsUsingDefaultConfig] = useState(false);
+  const { toast } = useToast();
 
   const loadAzureDevOpsConfig = useCallback(async () => {
     // This function can be called to force a reload of the config.
@@ -59,12 +61,17 @@ export function useAzureDevOpsConfig() {
       }
     } catch (error) {
       console.error("Error loading Azure DevOps config from Firestore:", error);
+      toast({
+        variant: "destructive",
+        title: "Error al Cargar Configuración",
+        description: "No se pudo obtener su configuración personal. Verifique las reglas de seguridad de Firestore."
+      });
       setConfig(defaultConfigFromEnv);
       setIsUsingDefaultConfig(true);
     } finally {
       setIsConfigLoaded(true);
     }
-  }, [user]);
+  }, [user, toast]);
 
   const saveAzureDevOpsConfig = async (newConfig: AzureDevOpsConfig): Promise<{success: boolean; error?: string}> => {
     if (!user || !db) {
