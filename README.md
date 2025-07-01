@@ -54,11 +54,23 @@ Esta aplicación requiere un proyecto de Firebase para su funcionalidad principa
     - En tu proyecto, ve a la sección de **Authentication**.
     - Haz clic en la pestaña "Sign-in method" (Método de inicio de sesión).
     - Habilita el proveedor **Email/Password** (Correo y contraseña).
-3.  **Habilitar Firestore**:
-    - Ve a la sección **Firestore Database**.
-    - Haz clic en "Crear base de datos".
-    - Inicia en **modo de producción**. Esto es importante por seguridad.
-    - Elige una ubicación para tu base de datos.
+3.  **Habilitar Firestore (¡Paso Crucial!)**:
+    - Esta aplicación **requiere** Firestore para guardar la configuración personal de cada usuario. Si no habilitas este servicio, la aplicación no podrá guardar datos.
+    - En tu proyecto de Firebase, ve a la sección **Firestore Database**.
+    - Haz clic en **"Crear base de datos"**.
+    - Selecciona iniciar en **modo de producción**. Esto es vital por seguridad.
+    - Elige la ubicación para tu base de datos (elige la más cercana a tus usuarios).
+    - Una vez creada, ve a la pestaña **"Reglas"** y reemplaza el contenido con las siguientes reglas para permitir que los usuarios gestionen su propia configuración de forma segura:
+    ```
+    rules_version = '2';
+    service cloud.firestore {
+      match /databases/{database}/documents {
+        match /userConfigs/{userId} {
+          allow read, write: if request.auth != null && request.auth.uid == userId;
+        }
+      }
+    }
+    ```
 4.  **Obtener Credenciales de la Aplicación Web**:
     - Ve a la Configuración de tu Proyecto (haz clic en el ícono de engranaje).
     - En la pestaña "General", desplázate hacia abajo hasta "Tus aplicaciones".

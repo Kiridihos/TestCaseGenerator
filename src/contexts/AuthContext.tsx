@@ -1,14 +1,16 @@
+
 "use client";
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User, onAuthStateChanged, signOut as firebaseSignOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, AuthError } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import { useToast } from "@/hooks/use-toast";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   isFirebaseConfigured: boolean;
+  isFirestoreConfigured: boolean;
   signInWithEmail: (email: string, pass: string) => Promise<void>;
   signUpWithEmail: (email: string, pass: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -21,6 +23,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const isFirebaseConfigured = !!auth;
+  const isFirestoreConfigured = !!db;
 
   useEffect(() => {
     // If Firebase is not configured, we don't need to do anything.
@@ -151,6 +154,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     user,
     loading,
     isFirebaseConfigured,
+    isFirestoreConfigured,
     signInWithEmail,
     signUpWithEmail,
     signOut,

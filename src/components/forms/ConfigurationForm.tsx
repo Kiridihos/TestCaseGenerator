@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -23,7 +24,7 @@ type ConfigurationFormValues = z.infer<typeof formSchema>;
 
 export function ConfigurationForm() {
   const { config, isConfigLoaded, saveAzureDevOpsConfig, clearAzureDevOpsConfig, isUsingDefaultConfig, loadAzureDevOpsConfig } = useAzureDevOpsConfig();
-  const { isFirebaseConfigured } = useAuth();
+  const { isFirestoreConfigured } = useAuth();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
@@ -48,13 +49,13 @@ export function ConfigurationForm() {
     );
   }
 
-  if (!isFirebaseConfigured) {
+  if (!isFirestoreConfigured) {
     return (
        <Alert variant="destructive">
         <Info className="h-4 w-4" />
-        <AlertTitle>Database Service Not Available</AlertTitle>
+        <AlertTitle>Servicio de Base de Datos No Disponible</AlertTitle>
         <AlertDescription>
-          Firebase is not configured, so personal settings cannot be saved. The app will rely on global defaults if available.
+          No se ha detectado una base de datos Firestore. Para guardar configuraciones personales, por favor, crea una base de datos Firestore en tu proyecto de Firebase y asegúrate de que esté configurada correctamente.
         </AlertDescription>
       </Alert>
     )

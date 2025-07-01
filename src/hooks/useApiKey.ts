@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
@@ -63,8 +64,8 @@ export function useAzureDevOpsConfig() {
       console.error("Error loading Azure DevOps config from Firestore:", error);
       toast({
         variant: "destructive",
-        title: "Error al Cargar Configuración",
-        description: "No se pudo obtener su configuración personal. Verifique las reglas de seguridad de Firestore."
+        title: "Error al Cargar Configuración Personal",
+        description: "No se pudo obtener tu configuración. Asegúrate de que has creado una base de datos Firestore y has configurado las reglas de seguridad correctamente."
       });
       setConfig(defaultConfigFromEnv);
       setIsUsingDefaultConfig(true);
