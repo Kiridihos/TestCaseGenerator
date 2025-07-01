@@ -19,7 +19,21 @@ export function useAzureDevOpsConfig() {
   const [isConfigLoaded, setIsConfigLoaded] = useState(false);
 
   const loadAzureDevOpsConfig = useCallback(async () => {
-    if (!user || !db) {
+    if (!user) {
+      setIsConfigLoaded(true);
+      return;
+    }
+    
+    // Default to .env variables if available, especially for new users
+    const defaultConfig: AzureDevOpsConfig = {
+        pat: process.env.NEXT_PUBLIC_AZURE_DEVOPS_PAT || "",
+        organization: process.env.NEXT_PUBLIC_AZURE_DEVOPS_ORGANIZATION || "",
+        project: process.env.NEXT_PUBLIC_AZURE_DEVOPS_PROJECT || ""
+    };
+
+    if (!db) {
+      console.warn("Firestore is not available. Falling back to default config.");
+      setConfig(defaultConfig);
       setIsConfigLoaded(true);
       return;
     }
@@ -31,11 +45,13 @@ export function useAzureDevOpsConfig() {
       if (docSnap.exists()) {
         setConfig(docSnap.data() as AzureDevOpsConfig);
       } else {
-        setConfig(emptyConfig);
+        // If user has no config in Firestore, use the default from .env
+        setConfig(defaultConfig);
       }
     } catch (error) {
       console.error("Error loading Azure DevOps config from Firestore:", error);
-      setConfig(emptyConfig);
+      // Fallback to default on error
+      setConfig(defaultConfig);
     } finally {
       setIsConfigLoaded(true);
     }
