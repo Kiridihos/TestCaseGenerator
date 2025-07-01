@@ -1,3 +1,4 @@
+
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
@@ -19,7 +20,7 @@ const nextConfig: NextConfig = {
     ],
   },
   serverActions: {
-    allowedOrigins: ['localhost:3000', 'localhost:9002', '*.devtunnels.ms'],
+    allowedOrigins: ['localhost:9002', '*.devtunnels.ms'],
   },
 };
 
