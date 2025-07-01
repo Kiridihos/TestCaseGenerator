@@ -7,10 +7,11 @@ import { LoginForm } from '@/components/forms/LoginForm';
 import { RegisterForm } from '@/components/forms/RegisterForm';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { TestTubeDiagonal, Loader2 } from 'lucide-react';
+import { TestTubeDiagonal, Loader2, AlertTriangle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function LoginPage() {
-  const { user, loading } = useAuth();
+  const { user, loading, isFirebaseConfigured } = useAuth();
   const router = useRouter();
   const [isLoginView, setIsLoginView] = useState(true);
 
@@ -46,6 +47,15 @@ export default function LoginPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {!isFirebaseConfigured && (
+                <Alert variant="destructive" className="mb-6">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Servicio de Autenticación No Disponible</AlertTitle>
+                    <AlertDescription>
+                        La configuración de Firebase no está completa. Por favor, contacta al administrador del sistema.
+                    </AlertDescription>
+                </Alert>
+            )}
             {isLoginView ? <LoginForm /> : <RegisterForm />}
             <div className="mt-4 text-center text-sm">
               {isLoginView ? "Don't have an account?" : "Already have an account?"}{' '}

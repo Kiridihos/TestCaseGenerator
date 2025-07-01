@@ -10,16 +10,22 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// This flag prevents the app from crashing if the .env file is not set up.
-// A valid Firebase API key is a good indicator that the config is present.
-export const isFirebaseConfigured = !!firebaseConfig.apiKey;
-
 let app: FirebaseApp | null = null;
 let auth: Auth | null = null;
 
-if (isFirebaseConfigured) {
+// Initialize Firebase only if the API key is provided
+if (firebaseConfig.apiKey) {
+  try {
     app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
     auth = getAuth(app);
+  } catch (e) {
+    console.error("Firebase initialization error:", e);
+    // app and auth will remain null
+  }
+} else {
+  // This message will appear in the server console during build/SSR
+  // and in the browser console.
+  console.warn("Firebase API key is missing. Authentication will be disabled. Please check your .env file.");
 }
 
 export { app, auth };

@@ -28,7 +28,7 @@ const formSchema = z.object({
 });
 
 export function LoginForm() {
-  const { signInWithEmail } = useAuth();
+  const { signInWithEmail, isFirebaseConfigured } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -81,7 +81,7 @@ export function LoginForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={isLoading} className="w-full">
+        <Button type="submit" disabled={isLoading || !isFirebaseConfigured} className="w-full">
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

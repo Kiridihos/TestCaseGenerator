@@ -2,12 +2,13 @@
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User, onAuthStateChanged, signOut as firebaseSignOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, AuthError } from 'firebase/auth';
-import { auth, isFirebaseConfigured } from '@/lib/firebase';
+import { auth } from '@/lib/firebase';
 import { useToast } from "@/hooks/use-toast";
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  isFirebaseConfigured: boolean;
   signInWithEmail: (email: string, pass: string) => Promise<void>;
   signUpWithEmail: (email: string, pass: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -19,18 +20,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-
-  const showConfigErrorToast = () => {
-    toast({
-      variant: "destructive",
-      title: "Configuración de Firebase Incorrecta",
-      description: "Las credenciales de Firebase no se han encontrado o no son válidas. La autenticación está deshabilitada. Por favor, revisa tu archivo .env.",
-      duration: 10000,
-    });
-  };
+  const isFirebaseConfigured = !!auth;
 
   useEffect(() => {
-    if (!isFirebaseConfigured || !auth) {
+    // If Firebase is not configured, we don't need to do anything.
+    if (!isFirebaseConfigured) {
       setLoading(false);
       return;
     }
@@ -41,14 +35,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [isFirebaseConfigured]);
+
+  const showConfigurationErrorToast = () => {
+     toast({
+        variant: "destructive",
+        title: "Configuración de Firebase Faltante",
+        description: "Las credenciales de Firebase no están configuradas en el servidor. Contacta al administrador."
+    });
+  }
 
   const signInWithEmail = async (email: string, pass: string) => {
-    if (!isFirebaseConfigured || !auth) {
-      showConfigErrorToast();
+    if (!auth) {
+      showConfigurationErrorToast();
       return;
     }
-
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email, pass);
@@ -86,11 +87,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
   
   const signUpWithEmail = async (email: string, pass: string) => {
-    if (!isFirebaseConfigured || !auth) {
-      showConfigErrorToast();
+    if (!auth) {
+      showConfigurationErrorToast();
       return;
     }
-    
     setLoading(true);
     try {
       await createUserWithEmailAndPassword(auth, email, pass);
@@ -126,11 +126,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
-    if (!isFirebaseConfigured || !auth) {
-      showConfigErrorToast();
+    if (!auth) {
+      showConfigurationErrorToast();
       return;
     }
-
     setLoading(true);
     try {
       await firebaseSignOut(auth);
@@ -151,6 +150,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const value = {
     user,
     loading,
+    isFirebaseConfigured,
     signInWithEmail,
     signUpWithEmail,
     signOut,

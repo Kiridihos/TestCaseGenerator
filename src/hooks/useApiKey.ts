@@ -11,12 +11,14 @@ export interface AzureDevOpsConfig {
   project: string | null;
 }
 
+// Read from environment variables
 const envConfig = {
     pat: process.env.NEXT_PUBLIC_ADO_PAT || null,
     organization: process.env.NEXT_PUBLIC_ADO_ORGANIZATION || null,
     project: process.env.NEXT_PUBLIC_ADO_PROJECT || null,
 };
 
+// Check if the global config is fully provided in the environment
 const isFromEnv = !!(envConfig.pat && envConfig.organization && envConfig.project);
 
 export function useAzureDevOpsConfig() {
@@ -24,10 +26,12 @@ export function useAzureDevOpsConfig() {
   const [isConfigLoaded, setIsConfigLoaded] = useState(false);
 
   useEffect(() => {
+    // If config is from environment, use it directly.
     if (isFromEnv) {
         setConfig(envConfig);
         setIsConfigLoaded(true);
     } else {
+        // Otherwise, try to load from localStorage.
         if (typeof window !== 'undefined') {
           try {
             const storedConfigString = localStorage.getItem(ADO_CONFIG_STORAGE_KEY);
@@ -42,18 +46,15 @@ export function useAzureDevOpsConfig() {
           }
         }
     }
-  }, []);
+  }, []); // Run only once on mount
 
   const saveAzureDevOpsConfig = useCallback((newConfig: AzureDevOpsConfig) => {
+    // Do not save if config is from environment variables
     if (isFromEnv) {
       console.warn("Configuration is managed by environment variables. Cannot save locally.");
       return;
     }
     if (typeof window !== 'undefined') {
-      if (!newConfig.pat || !newConfig.organization || !newConfig.project) {
-        console.error("PAT, Organization, and Project are required to save config.");
-        return;
-      }
       try {
         localStorage.setItem(ADO_CONFIG_STORAGE_KEY, JSON.stringify(newConfig));
         setConfig(newConfig);
@@ -64,6 +65,7 @@ export function useAzureDevOpsConfig() {
   }, []);
 
   const clearAzureDevOpsConfig = useCallback(() => {
+    // Do not clear if config is from environment variables
     if (isFromEnv) {
       console.warn("Configuration is managed by environment variables. Cannot clear locally.");
       return;
