@@ -22,6 +22,17 @@ if (firebaseConfig.apiKey) {
     auth = getAuth(app);
     db = getFirestore(app);
 
+    // This log helps debug which Firebase project is actually being used.
+    console.log(`Firebase App Initialized. Using Project ID: ${app.options.projectId}`);
+
+    // Warn if the .env file projectId doesn't match the one being used,
+    // which indicates that the hosting environment is injecting credentials.
+    if (firebaseConfig.projectId && app.options.projectId !== firebaseConfig.projectId) {
+      console.warn(
+        `FIREBASE CONFIG MISMATCH: The app is connected to project "${app.options.projectId}" (from the hosting environment), but your .env file specifies "${firebaseConfig.projectId}". The environment configuration takes priority.`
+      );
+    }
+
     // Try to enable offline persistence
     enableIndexedDbPersistence(db)
       .catch((err) => {
