@@ -149,6 +149,10 @@ npm install
 
 ## 8. Compilar y Ejecutar para Producción
 
+> **¡IMPORTANTE! Proceso de Compilación**
+> Antes de compilar, asegúrate de que tu archivo `workspace/.env` esté completamente configurado. Next.js **incrusta** las variables de entorno públicas (las que empiezan con `NEXT_PUBLIC_`) en el código de la aplicación durante el proceso de compilación (`npm run build`).
+> Si modificas el archivo `.env` después de haber compilado la aplicación, **debes volver a ejecutar `npm run build`** para que los cambios surtan efecto.
+
 ### Compilar la Aplicación
 Este comando compila y optimiza la aplicación Next.js para producción.
 
