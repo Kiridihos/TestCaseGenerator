@@ -1,27 +1,7 @@
-
-import type {NextConfig} from 'next';
-
-const nextConfig: NextConfig = {
-  /* config options here */
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'placehold.co',
-        port: '',
-        pathname: '/**',
-      },
-    ],
-  },
-  serverActions: {
-    allowedOrigins: ['localhost:9002', '*.devtunnels.ms'],
-  },
-};
+/**
+ * This file is intentionally left almost empty to avoid conflicts.
+ * The main configuration is in the root next.config.ts file.
+ */
+const nextConfig = {};
 
 export default nextConfig;

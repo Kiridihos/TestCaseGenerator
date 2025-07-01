@@ -19,8 +19,10 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  serverActions: {
-    allowedOrigins: ['localhost:9002', '*.devtunnels.ms'],
+  experimental: {
+    serverActions: {
+      allowedOrigins: ['localhost:9002', '*.devtunnels.ms'],
+    },
   },
 };
 
