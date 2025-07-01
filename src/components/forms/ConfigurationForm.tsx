@@ -163,7 +163,7 @@ export function ConfigurationForm() {
                   Guardando...
                 </>
               ) : (
-                "Guardar Configuración Personal"
+                "Guardar"
               )}
             </Button>
             <Button
