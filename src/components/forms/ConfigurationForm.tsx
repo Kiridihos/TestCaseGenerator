@@ -18,9 +18,7 @@ import { Input } from "@/components/ui/input";
 import { useAzureDevOpsConfig, type AzureDevOpsConfig } from "@/hooks/useApiKey";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect } from "react";
-import { KeyRound, CheckCircle, Building, FolderGit2, Info } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Label } from "@/components/ui/label";
+import { KeyRound, CheckCircle, Building, FolderGit2 } from "lucide-react";
 
 const formSchema = z.object({
   pat: z.string().min(1, "Personal Access Token (PAT) cannot be empty."),
@@ -31,7 +29,7 @@ const formSchema = z.object({
 type ConfigurationFormValues = z.infer<typeof formSchema>;
 
 export function ConfigurationForm() {
-  const { config, saveAzureDevOpsConfig, clearAzureDevOpsConfig, isConfigLoaded, isFromEnv } = useAzureDevOpsConfig();
+  const { config, saveAzureDevOpsConfig, clearAzureDevOpsConfig, isConfigLoaded } = useAzureDevOpsConfig();
   const { toast } = useToast();
 
   const form = useForm<ConfigurationFormValues>({
@@ -44,16 +42,16 @@ export function ConfigurationForm() {
   });
 
   useEffect(() => {
-    if (isConfigLoaded && (config.pat || config.organization || config.project)) {
-      form.setValue("pat", config.pat || "");
-      form.setValue("organization", config.organization || "");
-      form.setValue("project", config.project || "");
+    if (isConfigLoaded) {
+      form.reset({
+        pat: config.pat || "",
+        organization: config.organization || "",
+        project: config.project || "",
+      });
     }
   }, [config, form, isConfigLoaded]);
 
   function onSubmit(values: ConfigurationFormValues) {
-    if (isFromEnv) return;
-
     const newConfig: AzureDevOpsConfig = {
         pat: values.pat,
         organization: values.organization,
@@ -62,14 +60,12 @@ export function ConfigurationForm() {
     saveAzureDevOpsConfig(newConfig);
     toast({
       title: "Configuration Saved",
-      description: "Your Azure DevOps configuration has been saved successfully.",
+      description: "Your Azure DevOps configuration has been saved for your account.",
       action: <CheckCircle className="text-green-500" />,
     });
   }
 
   function handleClearConfig() {
-    if (isFromEnv) return;
-
     clearAzureDevOpsConfig();
     form.reset({ pat: "", organization: "", project: "" });
     toast({
@@ -80,34 +76,6 @@ export function ConfigurationForm() {
 
   if (!isConfigLoaded) {
     return <p>Loading configuration...</p>;
-  }
-
-  if (isFromEnv) {
-      return (
-          <div className="space-y-8">
-              <Alert>
-                  <Info className="h-4 w-4" />
-                  <AlertTitle>Configuration Managed Centrally</AlertTitle>
-                  <AlertDescription>
-                      The Azure DevOps connection details are configured via environment variables for all users. These settings cannot be changed here.
-                  </AlertDescription>
-              </Alert>
-              <div className="space-y-4">
-                  <div>
-                      <Label className="flex items-center gap-2 mb-2"><Building className="h-5 w-5 text-primary" /> Organization</Label>
-                      <Input readOnly value={config.organization || "Not set"} />
-                  </div>
-                   <div>
-                      <Label className="flex items-center gap-2 mb-2"><FolderGit2 className="h-5 w-5 text-primary" /> Project</Label>
-                      <Input readOnly value={config.project || "Not set"} />
-                  </div>
-                  <div>
-                      <Label className="flex items-center gap-2 mb-2"><KeyRound className="h-5 w-5 text-primary" /> Personal Access Token (PAT)</Label>
-                      <Input readOnly type="password" value={config.pat ? "••••••••••••••••" : "Not set"} />
-                  </div>
-              </div>
-          </div>
-      )
   }
 
   return (
@@ -163,7 +131,7 @@ export function ConfigurationForm() {
         />
         <div className="flex flex-col sm:flex-row gap-2">
             <Button type="submit" className="w-full sm:w-auto">Save Configuration</Button>
-            {(!isFromEnv && (config.pat || config.organization || config.project)) && (
+            {(config.pat || config.organization || config.project) && (
                 <Button type="button" variant="outline" onClick={handleClearConfig} className="w-full sm:w-auto">
                     Clear Configuration
                 </Button>

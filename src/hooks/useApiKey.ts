@@ -2,8 +2,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
-const ADO_CONFIG_STORAGE_KEY = 'azureDevOpsConfig';
+const ADO_CONFIG_STORAGE_KEY_PREFIX = 'azureDevOpsConfig_';
 
 export interface AzureDevOpsConfig {
   pat: string | null;
@@ -11,74 +12,68 @@ export interface AzureDevOpsConfig {
   project: string | null;
 }
 
-// Read from environment variables
-const envConfig = {
-    pat: process.env.NEXT_PUBLIC_ADO_PAT || null,
-    organization: process.env.NEXT_PUBLIC_ADO_ORGANIZATION || null,
-    project: process.env.NEXT_PUBLIC_ADO_PROJECT || null,
-};
-
-// Check if the global config is fully provided in the environment
-const isFromEnv = !!(envConfig.pat && envConfig.organization && envConfig.project);
-
 export function useAzureDevOpsConfig() {
+  const { user } = useAuth();
   const [config, setConfig] = useState<AzureDevOpsConfig>({ pat: null, organization: null, project: null });
   const [isConfigLoaded, setIsConfigLoaded] = useState(false);
 
+  const storageKey = user ? `${ADO_CONFIG_STORAGE_KEY_PREFIX}${user.uid}` : null;
+
   useEffect(() => {
-    // If config is from environment, use it directly.
-    if (isFromEnv) {
-        setConfig(envConfig);
+    if (!storageKey) {
+        setConfig({ pat: null, organization: null, project: null });
         setIsConfigLoaded(true);
-    } else {
-        // Otherwise, try to load from localStorage.
-        if (typeof window !== 'undefined') {
-          try {
-            const storedConfigString = localStorage.getItem(ADO_CONFIG_STORAGE_KEY);
+        return;
+    }
+
+    if (typeof window !== 'undefined') {
+        setIsConfigLoaded(false);
+        try {
+            const storedConfigString = localStorage.getItem(storageKey);
             if (storedConfigString) {
               const storedConfig = JSON.parse(storedConfigString) as AzureDevOpsConfig;
               setConfig(storedConfig);
+            } else {
+              setConfig({ pat: null, organization: null, project: null });
             }
-          } catch (error) {
+        } catch (error) {
             console.error("Failed to access localStorage or parse config:", error);
-          } finally {
+            setConfig({ pat: null, organization: null, project: null });
+        } finally {
             setIsConfigLoaded(true);
-          }
         }
     }
-  }, []); // Run only once on mount
+  }, [storageKey]);
 
   const saveAzureDevOpsConfig = useCallback((newConfig: AzureDevOpsConfig) => {
-    // Do not save if config is from environment variables
-    if (isFromEnv) {
-      console.warn("Configuration is managed by environment variables. Cannot save locally.");
+    if (!storageKey) {
+      console.warn("Cannot save config, no user is logged in.");
       return;
     }
     if (typeof window !== 'undefined') {
       try {
-        localStorage.setItem(ADO_CONFIG_STORAGE_KEY, JSON.stringify(newConfig));
+        localStorage.setItem(storageKey, JSON.stringify(newConfig));
         setConfig(newConfig);
       } catch (error) {
         console.error("Failed to save to localStorage:", error);
       }
     }
-  }, []);
+  }, [storageKey]);
 
   const clearAzureDevOpsConfig = useCallback(() => {
-    // Do not clear if config is from environment variables
-    if (isFromEnv) {
-      console.warn("Configuration is managed by environment variables. Cannot clear locally.");
-      return;
+    if (!storageKey) {
+        console.warn("Cannot clear config, no user is logged in.");
+        return;
     }
     if (typeof window !== 'undefined') {
       try {
-        localStorage.removeItem(ADO_CONFIG_STORAGE_KEY);
+        localStorage.removeItem(storageKey);
         setConfig({ pat: null, organization: null, project: null });
       } catch (error) {
         console.error("Failed to remove from localStorage:", error);
       }
     }
-  }, []);
+  }, [storageKey]);
 
-  return { config, saveAzureDevOpsConfig, clearAzureDevOpsConfig, isConfigLoaded, isFromEnv };
+  return { config, saveAzureDevOpsConfig, clearAzureDevOpsConfig, isConfigLoaded };
 }
