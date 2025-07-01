@@ -17,8 +17,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { useAzureDevOpsConfig, type AzureDevOpsConfig } from "@/hooks/useApiKey";
 import { useToast } from "@/hooks/use-toast";
-import { useEffect } from "react";
-import { KeyRound, CheckCircle, Building, FolderGit2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { KeyRound, CheckCircle, Building, FolderGit2, Loader2 } from "lucide-react";
 
 const formSchema = z.object({
   pat: z.string().min(1, "Personal Access Token (PAT) cannot be empty."),
@@ -31,6 +31,7 @@ type ConfigurationFormValues = z.infer<typeof formSchema>;
 export function ConfigurationForm() {
   const { config, saveAzureDevOpsConfig, clearAzureDevOpsConfig, isConfigLoaded } = useAzureDevOpsConfig();
   const { toast } = useToast();
+  const [isSaving, setIsSaving] = useState(false);
 
   const form = useForm<ConfigurationFormValues>({
     resolver: zodResolver(formSchema),
@@ -51,32 +52,63 @@ export function ConfigurationForm() {
     }
   }, [config, form, isConfigLoaded]);
 
-  function onSubmit(values: ConfigurationFormValues) {
-    const newConfig: AzureDevOpsConfig = {
-        pat: values.pat,
-        organization: values.organization,
-        project: values.project,
-    };
-    saveAzureDevOpsConfig(newConfig);
-    toast({
-      title: "Configuration Saved",
-      description: "Your Azure DevOps configuration has been saved for your account.",
-      action: <CheckCircle className="text-green-500" />,
-    });
+  async function onSubmit(values: ConfigurationFormValues) {
+    setIsSaving(true);
+    try {
+        const newConfig: AzureDevOpsConfig = {
+            pat: values.pat,
+            organization: values.organization,
+            project: values.project,
+        };
+        await saveAzureDevOpsConfig(newConfig);
+        toast({
+          title: "Configuration Saved",
+          description: "Your Azure DevOps configuration has been saved to your account.",
+          action: <CheckCircle className="text-green-500" />,
+        });
+    } catch (error) {
+        console.error("Failed to save configuration:", error);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Could not save your configuration. Please try again.",
+        });
+    } finally {
+        setIsSaving(false);
+    }
   }
 
-  function handleClearConfig() {
-    clearAzureDevOpsConfig();
-    form.reset({ pat: "", organization: "", project: "" });
-    toast({
-        title: "Configuration Cleared",
-        description: "Your Azure DevOps configuration has been cleared.",
-    });
+  async function handleClearConfig() {
+    setIsSaving(true);
+    try {
+        await clearAzureDevOpsConfig();
+        form.reset({ pat: "", organization: "", project: "" });
+        toast({
+            title: "Configuration Cleared",
+            description: "Your Azure DevOps configuration has been cleared.",
+        });
+    } catch (error) {
+        console.error("Failed to clear configuration:", error);
+        toast({
+            variant: "destructive",
+            title: "Error",
+            description: "Could not clear your configuration. Please try again.",
+        });
+    } finally {
+        setIsSaving(false);
+    }
   }
 
   if (!isConfigLoaded) {
-    return <p>Loading configuration...</p>;
+    return (
+        <div className="flex items-center justify-center p-8">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <p className="ml-4">Loading your configuration...</p>
+        </div>
+    );
   }
+  
+  const isConfigPresent = !!(config.pat || config.organization || config.project);
 
   return (
     <Form {...form}>
@@ -90,10 +122,10 @@ export function ConfigurationForm() {
                 <KeyRound className="h-5 w-5 text-primary" /> Azure DevOps Personal Access Token (PAT)
               </FormLabel>
               <FormControl>
-                <Input type="password" placeholder="Enter your Azure DevOps PAT" {...field} />
+                <Input type="password" placeholder="Enter your Azure DevOps PAT" {...field} disabled={isSaving}/>
               </FormControl>
               <FormDescription>
-                This token will be stored locally in your browser. Ensure it has Work Item read/write permissions.
+                This token will be stored securely with your account. Ensure it has Work Item read/write permissions.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -108,7 +140,7 @@ export function ConfigurationForm() {
                 <Building className="h-5 w-5 text-primary" /> Azure DevOps Organization
               </FormLabel>
               <FormControl>
-                <Input placeholder="Enter your Azure DevOps Organization name" {...field} />
+                <Input placeholder="Enter your Azure DevOps Organization name" {...field} disabled={isSaving}/>
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -123,17 +155,19 @@ export function ConfigurationForm() {
                 <FolderGit2 className="h-5 w-5 text-primary" /> Azure DevOps Project
               </FormLabel>
               <FormControl>
-                <Input placeholder="Enter your Azure DevOps Project name" {...field} />
+                <Input placeholder="Enter your Azure DevOps Project name" {...field} disabled={isSaving}/>
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
         <div className="flex flex-col sm:flex-row gap-2">
-            <Button type="submit" className="w-full sm:w-auto">Save Configuration</Button>
-            {(config.pat || config.organization || config.project) && (
-                <Button type="button" variant="outline" onClick={handleClearConfig} className="w-full sm:w-auto">
-                    Clear Configuration
+            <Button type="submit" className="w-full sm:w-auto" disabled={isSaving}>
+                {isSaving ? <Loader2 className="animate-spin" /> : "Save Configuration"}
+            </Button>
+            {isConfigPresent && (
+                <Button type="button" variant="outline" onClick={handleClearConfig} className="w-full sm:w-auto" disabled={isSaving}>
+                     {isSaving ? <Loader2 className="animate-spin" /> : "Clear Configuration"}
                 </Button>
             )}
         </div>

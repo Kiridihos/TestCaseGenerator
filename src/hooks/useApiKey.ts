@@ -3,8 +3,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-
-const ADO_CONFIG_STORAGE_KEY_PREFIX = 'azureDevOpsConfig_';
+import { doc, getDoc, setDoc, deleteDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export interface AzureDevOpsConfig {
   pat: string | null;
@@ -12,68 +12,60 @@ export interface AzureDevOpsConfig {
   project: string | null;
 }
 
+const emptyConfig: AzureDevOpsConfig = { pat: null, organization: null, project: null };
+
 export function useAzureDevOpsConfig() {
   const { user } = useAuth();
-  const [config, setConfig] = useState<AzureDevOpsConfig>({ pat: null, organization: null, project: null });
+  const [config, setConfig] = useState<AzureDevOpsConfig>(emptyConfig);
   const [isConfigLoaded, setIsConfigLoaded] = useState(false);
 
-  const storageKey = user ? `${ADO_CONFIG_STORAGE_KEY_PREFIX}${user.uid}` : null;
-
   useEffect(() => {
-    if (!storageKey) {
-        setConfig({ pat: null, organization: null, project: null });
-        setIsConfigLoaded(true);
-        return;
-    }
-
-    if (typeof window !== 'undefined') {
+    const fetchConfig = async () => {
+      if (user && db) {
         setIsConfigLoaded(false);
         try {
-            const storedConfigString = localStorage.getItem(storageKey);
-            if (storedConfigString) {
-              const storedConfig = JSON.parse(storedConfigString) as AzureDevOpsConfig;
-              setConfig(storedConfig);
-            } else {
-              setConfig({ pat: null, organization: null, project: null });
-            }
+          const docRef = doc(db, "userConfigs", user.uid);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            setConfig(docSnap.data() as AzureDevOpsConfig);
+          } else {
+            setConfig(emptyConfig);
+          }
         } catch (error) {
-            console.error("Failed to access localStorage or parse config:", error);
-            setConfig({ pat: null, organization: null, project: null });
+          console.error("Failed to fetch user config from Firestore:", error);
+          setConfig(emptyConfig);
         } finally {
-            setIsConfigLoaded(true);
+          setIsConfigLoaded(true);
         }
-    }
-  }, [storageKey]);
-
-  const saveAzureDevOpsConfig = useCallback((newConfig: AzureDevOpsConfig) => {
-    if (!storageKey) {
-      console.warn("Cannot save config, no user is logged in.");
-      return;
-    }
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem(storageKey, JSON.stringify(newConfig));
-        setConfig(newConfig);
-      } catch (error) {
-        console.error("Failed to save to localStorage:", error);
+      } else {
+        // No user or db, so reset config and consider it "loaded"
+        setConfig(emptyConfig);
+        setIsConfigLoaded(true);
       }
-    }
-  }, [storageKey]);
+    };
 
-  const clearAzureDevOpsConfig = useCallback(() => {
-    if (!storageKey) {
-        console.warn("Cannot clear config, no user is logged in.");
-        return;
+    fetchConfig();
+  }, [user]);
+
+  const saveAzureDevOpsConfig = useCallback(async (newConfig: AzureDevOpsConfig) => {
+    if (!user || !db) {
+      console.warn("Cannot save config, no user is logged in or DB is not available.");
+      throw new Error("User not authenticated or database not available.");
     }
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.removeItem(storageKey);
-        setConfig({ pat: null, organization: null, project: null });
-      } catch (error) {
-        console.error("Failed to remove from localStorage:", error);
-      }
+    const docRef = doc(db, "userConfigs", user.uid);
+    await setDoc(docRef, newConfig, { merge: true });
+    setConfig(newConfig);
+  }, [user]);
+
+  const clearAzureDevOpsConfig = useCallback(async () => {
+    if (!user || !db) {
+      console.warn("Cannot clear config, no user is logged in or DB is not available.");
+      throw new Error("User not authenticated or database not available.");
     }
-  }, [storageKey]);
+    const docRef = doc(db, "userConfigs", user.uid);
+    await deleteDoc(docRef);
+    setConfig(emptyConfig);
+  }, [user]);
 
   return { config, saveAzureDevOpsConfig, clearAzureDevOpsConfig, isConfigLoaded };
 }
