@@ -9,7 +9,7 @@ Este documento proporciona una guía completa para configurar, y desplegar la ap
 4. [Configuración del Proyecto Firebase](#4-configuración-del-proyecto-firebase)
 5. [Configuración de Azure DevOps](#5-configuración-de-azure-devops)
 6. [Configuración de la Aplicación](#6-configuración-de-la-aplicación)
-    - [Variables de Entorno (`workspace/.env`)](#variables-de-entorno-workspaceenv)
+    - [Variables de Entorno (`.env`)](#variables-de-entorno-env)
     - [Autenticación de Google AI / Genkit](#autenticación-de-google-ai--genkit)
 7. [Instalación](#7-instalación)
 8. [Compilar y Ejecutar para Producción](#8-compilar-y-ejecutar-para-producción)
@@ -80,13 +80,12 @@ Para conectarse a Azure DevOps, la aplicación necesita un Token de Acceso Perso
 
 ## 6. Configuración de la Aplicación
 
-### Variables de Entorno (`workspace/.env`)
+### Variables de Entorno (`.env`)
 
-Todas las claves secretas y variables de configuración se gestionan en un único archivo: `workspace/.env`. **Este es el único archivo que necesitas editar.**
+Todas las claves secretas y variables de configuración se gestionan en un único archivo: `.env`, ubicado en la raíz del proyecto. **Este es el único archivo que necesitas editar.**
 
-1.  Navega al directorio `workspace` en la raíz del proyecto.
-2.  Crea un archivo llamado `.env`.
-3.  Copia y pega la siguiente plantilla en el archivo y llénala con tus credenciales.
+1.  En la raíz de tu proyecto, crea un archivo llamado `.env`.
+2.  Copia y pega la siguiente plantilla en el archivo y llénala con tus credenciales.
 
 ```env
 # ----------------------------------
@@ -110,7 +109,7 @@ NEXT_PUBLIC_AZURE_DEVOPS_ORGANIZATION=
 NEXT_PUBLIC_AZURE_DEVOPS_PROJECT=
 
 # ----------------------------------
-# GOOGLE AI / GENKIT (Requerido para Funciones de IA)
+# GOOGLE AI / GENKIT (Requerido para Funciones de IA en servidor on-premise)
 # ----------------------------------
 # Ruta a tu archivo de clave de cuenta de servicio de Google Cloud.
 # Consulta la sección "Autenticación de Google AI / Genkit" a continuación para más detalles.
@@ -132,7 +131,7 @@ Como se mencionó anteriormente, las funciones de IA son impulsadas por Genkit, 
     - Se descargará un archivo JSON. Esta es tu clave de cuenta de servicio.
 3.  **Configurar el Servidor**:
     - Coloca el archivo de clave JSON descargado en un lugar seguro en tu servidor (ej., `/etc/secrets/gcp-key.json`).
-    - En tu archivo `workspace/.env`, establece la variable `GOOGLE_APPLICATION_CREDENTIALS` a la ruta absoluta de ese archivo JSON.
+    - En tu archivo `.env`, establece la variable `GOOGLE_APPLICATION_CREDENTIALS` a la ruta absoluta de ese archivo JSON.
 
 ## 7. Instalación
 
@@ -150,7 +149,7 @@ npm install
 ## 8. Compilar y Ejecutar para Producción
 
 > **¡IMPORTANTE! Proceso de Compilación**
-> Antes de compilar, asegúrate de que tu archivo `workspace/.env` esté completamente configurado. Next.js **incrusta** las variables de entorno públicas (las que empiezan con `NEXT_PUBLIC_`) en el código de la aplicación durante el proceso de compilación (`npm run build`).
+> Antes de compilar, asegúrate de que tu archivo `.env` esté completamente configurado. Next.js **incrusta** las variables de entorno públicas (las que empiezan con `NEXT_PUBLIC_`) en el código de la aplicación durante el proceso de compilación (`npm run build`).
 > Si modificas el archivo `.env` después de haber compilado la aplicación, **debes volver a ejecutar `npm run build`** para que los cambios surtan efecto.
 
 ### Compilar la Aplicación
