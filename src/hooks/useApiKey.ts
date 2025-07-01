@@ -51,7 +51,8 @@ export function useAzureDevOpsConfig() {
         setIsConfigLoaded(false);
         try {
           const docRef = doc(db, "userConfigs", user.uid);
-          const docSnap = await withTimeout(getDoc(docRef), 10000);
+          // Removed withTimeout from initial fetch to prevent unhandled rejection on page load
+          const docSnap = await getDoc(docRef);
           if (docSnap.exists()) {
             setConfig(docSnap.data() as AzureDevOpsConfig);
           } else {
