@@ -33,7 +33,7 @@ type ConfigurationFormValues = z.infer<typeof formSchema>;
 
 export function ConfigurationForm() {
   const { config, saveAzureDevOpsConfig, clearAzureDevOpsConfig, isConfigLoaded } = useAzureDevOpsConfig();
-  const { isFirebaseConfigured } = useAuth();
+  const { auth, isFirebaseConfigured } = useAuth();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
 
@@ -74,10 +74,23 @@ export function ConfigurationForm() {
         });
     } catch (error) {
         console.error("Failed to save configuration:", error);
+        
+        let description = "Could not save your configuration. Please try again.";
+        if (error instanceof Error) {
+            if (error.message.includes('permission-denied')) {
+                description = "Permission Denied. Please check your Firestore security rules to allow writes.";
+            } else if (error.message.includes('timed out')) {
+                description = "The request timed out. Please check your internet connection and ensure Firestore is enabled in your Firebase project console.";
+            } else {
+                description = `An unexpected error occurred. Check the console for details.`;
+            }
+        }
+
         toast({
             variant: "destructive",
-            title: "Error",
-            description: "Could not save your configuration. Please try again.",
+            title: "Save Error",
+            description: description,
+            duration: 9000,
         });
     } finally {
         setIsSaving(false);
@@ -105,13 +118,13 @@ export function ConfigurationForm() {
     }
   }
 
-  if (!isFirebaseConfigured) {
+  if (!isFirebaseConfigured || !auth) {
     return (
         <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Servicio de Base de Datos No Disponible</AlertTitle>
+            <AlertTitle>Servicio de Autenticación/Base de Datos No Disponible</AlertTitle>
             <AlertDescription>
-                La configuración de Firebase no está completa. No se pueden guardar los ajustes. Por favor, contacta al administrador del sistema o revisa las variables de entorno.
+                La configuración de Firebase no está completa o el usuario no está autenticado. No se pueden guardar los ajustes. Por favor, contacta al administrador del sistema o revisa las variables de entorno.
             </AlertDescription>
         </Alert>
     );
