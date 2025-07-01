@@ -4,12 +4,11 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { useAzureDevOpsConfig, type AzureDevOpsConfig } from "@/hooks/useApiKey";
-import { useToast } from "@/hooks/use-toast";
+import { useAzureDevOpsConfig } from "@/hooks/useApiKey";
 import { Button } from "@/components/ui/button";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Loader2, KeyRound, Building, FolderGit2, Info, Trash, Globe } from "lucide-react";
+import { Loader2, KeyRound, Building, FolderGit2, Info, Trash, Globe, AlertCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { useAuth } from "@/contexts/AuthContext";
@@ -23,9 +22,8 @@ const formSchema = z.object({
 type ConfigurationFormValues = z.infer<typeof formSchema>;
 
 export function ConfigurationForm() {
-  const { config, isConfigLoaded, saveAzureDevOpsConfig, clearAzureDevOpsConfig, isUsingDefaultConfig, loadAzureDevOpsConfig } = useAzureDevOpsConfig();
+  const { config, isConfigLoaded, saveAzureDevOpsConfig, clearAzureDevOpsConfig, isUsingDefaultConfig, personalConfigError, loadAzureDevOpsConfig } = useAzureDevOpsConfig();
   const { isFirestoreConfigured } = useAuth();
-  const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
 
@@ -63,45 +61,35 @@ export function ConfigurationForm() {
 
   async function onSubmit(values: ConfigurationFormValues) {
     setIsSaving(true);
-    const result = await saveAzureDevOpsConfig(values);
-    if (result.success) {
-      toast({
-        title: "Configuration Saved",
-        description: "Your personal Azure DevOps settings have been saved successfully.",
-      });
-      loadAzureDevOpsConfig(); // Refresh state
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Error Saving",
-        description: result.error || "Could not save configuration. Please try again.",
-      });
-    }
+    await saveAzureDevOpsConfig(values);
     setIsSaving(false);
   }
 
   async function handleClear() {
     setIsClearing(true);
-    const result = await clearAzureDevOpsConfig();
-     if (result.success) {
-      toast({
-        title: "Configuration Cleared",
-        description: "Your personal settings have been removed. The app will now use the default configuration if available.",
-      });
-      loadAzureDevOpsConfig(); // Refresh state
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Error Clearing",
-        description: result.error || "Could not clear configuration. Please try again.",
-      });
-    }
+    await clearAzureDevOpsConfig();
     setIsClearing(false);
   }
 
   return (
     <div className="space-y-8">
-      {isUsingDefaultConfig ? (
+      {personalConfigError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error al Cargar Configuración Personal</AlertTitle>
+          <AlertDescription>
+            No se pudo obtener tu configuración desde Firestore. Esto usualmente se debe a reglas de seguridad incorrectas.
+            <p className="font-mono text-xs mt-2 bg-destructive-foreground/10 p-2 rounded">
+              {personalConfigError.message}
+            </p>
+            <p className="mt-2">
+              Asegúrate de que tus <strong>Reglas de Firestore</strong> en la consola de Firebase permiten el acceso. Consulta el <code>README.md</code> para ver las reglas correctas.
+            </p>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {isUsingDefaultConfig && !personalConfigError && (
         <Alert>
           <Globe className="h-4 w-4" />
           <AlertTitle>Using Global Default Configuration</AlertTitle>
@@ -109,8 +97,10 @@ export function ConfigurationForm() {
             These settings are provided by the application administrator. You can save your own personal settings below to override them.
           </AlertDescription>
         </Alert>
-      ) : (
-        <Alert>
+      )} 
+      
+      {!isUsingDefaultConfig && !personalConfigError && (
+         <Alert>
             <Info className="h-4 w-4" />
             <AlertTitle>Using Personal Configuration</AlertTitle>
             <AlertDescription>
@@ -118,6 +108,7 @@ export function ConfigurationForm() {
             </AlertDescription>
         </Alert>
       )}
+
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <FormField
