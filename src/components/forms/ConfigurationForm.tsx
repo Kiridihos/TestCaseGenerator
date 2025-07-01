@@ -21,34 +21,9 @@ import { useEffect, useState } from "react";
 import { KeyRound, CheckCircle, Building, FolderGit2, Loader2 } from "lucide-react";
 
 const formSchema = z.object({
-  pat: z.string(),
-  organization: z.string(),
-  project: z.string(),
-}).superRefine((data, ctx) => {
-  const filledFieldsCount = [data.pat, data.organization, data.project].filter(Boolean).length;
-
-  // If some fields are filled, but not all (i.e., 1 or 2 fields are filled), add an issue.
-  if (filledFieldsCount > 0 && filledFieldsCount < 3) {
-    const errorMessage = "Se requieren los tres campos para guardar una configuración válida.";
-    if (!data.pat) {
-      ctx.addIssue({
-        path: ['pat'],
-        message: errorMessage,
-      });
-    }
-    if (!data.organization) {
-      ctx.addIssue({
-        path: ['organization'],
-        message: errorMessage,
-      });
-    }
-    if (!data.project) {
-      ctx.addIssue({
-        path: ['project'],
-        message: errorMessage,
-      });
-    }
-  }
+  pat: z.string().min(1, { message: "El Personal Access Token es obligatorio." }),
+  organization: z.string().min(1, { message: "La Organización es obligatoria." }),
+  project: z.string().min(1, { message: "El Proyecto es obligatorio." }),
 });
 
 
@@ -66,7 +41,6 @@ export function ConfigurationForm() {
       organization: "",
       project: "",
     },
-    // We want to re-validate on change when there's a superRefine error
     mode: "onChange" 
   });
 
@@ -84,19 +58,15 @@ export function ConfigurationForm() {
     setIsSaving(true);
     try {
         const newConfig: AzureDevOpsConfig = {
-            pat: values.pat || null,
-            organization: values.organization || null,
-            project: values.project || null,
+            pat: values.pat,
+            organization: values.organization,
+            project: values.project,
         };
         await saveAzureDevOpsConfig(newConfig);
         
-        const isConfigEmpty = !newConfig.pat && !newConfig.organization && !newConfig.project;
-
         toast({
-          title: isConfigEmpty ? "Configuration Cleared" : "Configuration Saved",
-          description: isConfigEmpty 
-            ? "Your Azure DevOps configuration has been cleared."
-            : "Your Azure DevOps configuration has been saved to your account.",
+          title: "Configuration Saved",
+          description: "Your Azure DevOps configuration has been saved to your account.",
           action: <CheckCircle className="text-green-500" />,
         });
     } catch (error) {
