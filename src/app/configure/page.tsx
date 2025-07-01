@@ -37,7 +37,7 @@ export default function ConfigurePage() {
             </div>
             <CardTitle className="font-headline text-2xl">Application Configuration</CardTitle>
             <CardDescription>
-              Manage your Azure DevOps Personal Access Token (PAT), Organization, and Project for seamless integration.
+              Manage your Azure DevOps integration settings. If settings are managed centrally, they will be read-only.
             </CardDescription>
           </CardHeader>
           <CardContent>

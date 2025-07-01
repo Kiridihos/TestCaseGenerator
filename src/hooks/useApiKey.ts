@@ -11,31 +11,47 @@ export interface AzureDevOpsConfig {
   project: string | null;
 }
 
+const envConfig = {
+    pat: process.env.NEXT_PUBLIC_ADO_PAT || null,
+    organization: process.env.NEXT_PUBLIC_ADO_ORGANIZATION || null,
+    project: process.env.NEXT_PUBLIC_ADO_PROJECT || null,
+};
+
+const isFromEnv = !!(envConfig.pat && envConfig.organization && envConfig.project);
+
 export function useAzureDevOpsConfig() {
   const [config, setConfig] = useState<AzureDevOpsConfig>({ pat: null, organization: null, project: null });
   const [isConfigLoaded, setIsConfigLoaded] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const storedConfigString = localStorage.getItem(ADO_CONFIG_STORAGE_KEY);
-        if (storedConfigString) {
-          const storedConfig = JSON.parse(storedConfigString) as AzureDevOpsConfig;
-          setConfig(storedConfig);
-        }
-      } catch (error) {
-        console.error("Failed to access localStorage or parse config:", error);
-      } finally {
+    if (isFromEnv) {
+        setConfig(envConfig);
         setIsConfigLoaded(true);
-      }
+    } else {
+        if (typeof window !== 'undefined') {
+          try {
+            const storedConfigString = localStorage.getItem(ADO_CONFIG_STORAGE_KEY);
+            if (storedConfigString) {
+              const storedConfig = JSON.parse(storedConfigString) as AzureDevOpsConfig;
+              setConfig(storedConfig);
+            }
+          } catch (error) {
+            console.error("Failed to access localStorage or parse config:", error);
+          } finally {
+            setIsConfigLoaded(true);
+          }
+        }
     }
   }, []);
 
   const saveAzureDevOpsConfig = useCallback((newConfig: AzureDevOpsConfig) => {
+    if (isFromEnv) {
+      console.warn("Configuration is managed by environment variables. Cannot save locally.");
+      return;
+    }
     if (typeof window !== 'undefined') {
       if (!newConfig.pat || !newConfig.organization || !newConfig.project) {
         console.error("PAT, Organization, and Project are required to save config.");
-        // Optionally, you could throw an error or handle this more gracefully
         return;
       }
       try {
@@ -48,6 +64,10 @@ export function useAzureDevOpsConfig() {
   }, []);
 
   const clearAzureDevOpsConfig = useCallback(() => {
+    if (isFromEnv) {
+      console.warn("Configuration is managed by environment variables. Cannot clear locally.");
+      return;
+    }
     if (typeof window !== 'undefined') {
       try {
         localStorage.removeItem(ADO_CONFIG_STORAGE_KEY);
@@ -58,5 +78,5 @@ export function useAzureDevOpsConfig() {
     }
   }, []);
 
-  return { config, saveAzureDevOpsConfig, clearAzureDevOpsConfig, isConfigLoaded };
+  return { config, saveAzureDevOpsConfig, clearAzureDevOpsConfig, isConfigLoaded, isFromEnv };
 }
