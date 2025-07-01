@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, deleteDoc } from "firebase/firestore";
 
 export interface AzureDevOpsConfig {
   pat: string;
@@ -17,23 +17,31 @@ export function useAzureDevOpsConfig() {
   const { user } = useAuth();
   const [config, setConfig] = useState<AzureDevOpsConfig>(emptyConfig);
   const [isConfigLoaded, setIsConfigLoaded] = useState(false);
+  const [isUsingDefaultConfig, setIsUsingDefaultConfig] = useState(false);
 
   const loadAzureDevOpsConfig = useCallback(async () => {
+    // This function can be called to force a reload of the config.
+    setIsConfigLoaded(false);
+
+    // Define the global default configuration from the .env file
+    const defaultConfigFromEnv: AzureDevOpsConfig = {
+      pat: process.env.NEXT_PUBLIC_AZURE_DEVOPS_PAT || "",
+      organization: process.env.NEXT_PUBLIC_AZURE_DEVOPS_ORGANIZATION || "",
+      project: process.env.NEXT_PUBLIC_AZURE_DEVOPS_PROJECT || ""
+    };
+    
     if (!user) {
+      // If no user, there's no personal config. Use the default from .env
+      setConfig(defaultConfigFromEnv);
+      setIsUsingDefaultConfig(true);
       setIsConfigLoaded(true);
       return;
     }
-    
-    // Default to .env variables if available, especially for new users
-    const defaultConfig: AzureDevOpsConfig = {
-        pat: process.env.NEXT_PUBLIC_AZURE_DEVOPS_PAT || "",
-        organization: process.env.NEXT_PUBLIC_AZURE_DEVOPS_ORGANIZATION || "",
-        project: process.env.NEXT_PUBLIC_AZURE_DEVOPS_PROJECT || ""
-    };
 
     if (!db) {
-      console.warn("Firestore is not available. Falling back to default config.");
-      setConfig(defaultConfig);
+      console.warn("Firestore is not available. Falling back to default .env config.");
+      setConfig(defaultConfigFromEnv);
+      setIsUsingDefaultConfig(true);
       setIsConfigLoaded(true);
       return;
     }
@@ -44,31 +52,60 @@ export function useAzureDevOpsConfig() {
 
       if (docSnap.exists()) {
         setConfig(docSnap.data() as AzureDevOpsConfig);
+        setIsUsingDefaultConfig(false);
       } else {
-        // If user has no config in Firestore, use the default from .env
-        setConfig(defaultConfig);
+        setConfig(defaultConfigFromEnv);
+        setIsUsingDefaultConfig(true);
       }
     } catch (error) {
       console.error("Error loading Azure DevOps config from Firestore:", error);
-      // Fallback to default on error
-      setConfig(defaultConfig);
+      setConfig(defaultConfigFromEnv);
+      setIsUsingDefaultConfig(true);
     } finally {
       setIsConfigLoaded(true);
     }
   }, [user]);
 
-  const saveAzureDevOpsConfig = async (newConfig: AzureDevOpsConfig): Promise<void> => {
+  const saveAzureDevOpsConfig = async (newConfig: AzureDevOpsConfig): Promise<{success: boolean; error?: string}> => {
     if (!user || !db) {
-      throw new Error("User not authenticated or database not available.");
+      return { success: false, error: "User not authenticated or database not available." };
     }
-    const docRef = doc(db, "userConfigs", user.uid);
-    await setDoc(docRef, newConfig, { merge: true });
-    setConfig(newConfig);
+    try {
+      const docRef = doc(db, "userConfigs", user.uid);
+      await setDoc(docRef, newConfig, { merge: true });
+      setConfig(newConfig);
+      setIsUsingDefaultConfig(false);
+      return { success: true };
+    } catch (error: any) {
+        console.error("Error saving config:", error);
+        return { success: false, error: "Failed to save configuration to the database."};
+    }
   };
+  
+  const clearAzureDevOpsConfig = async (): Promise<{success: boolean; error?: string}> => {
+     if (!user || !db) {
+      return { success: false, error: "User not authenticated or database not available." };
+    }
+    try {
+      const docRef = doc(db, "userConfigs", user.uid);
+      await deleteDoc(docRef);
+      const defaultConfigFromEnv: AzureDevOpsConfig = {
+        pat: process.env.NEXT_PUBLIC_AZURE_DEVOPS_PAT || "",
+        organization: process.env.NEXT_PUBLIC_AZURE_DEVOPS_ORGANIZATION || "",
+        project: process.env.NEXT_PUBLIC_AZURE_DEVOPS_PROJECT || ""
+      };
+      setConfig(defaultConfigFromEnv);
+      setIsUsingDefaultConfig(true);
+      return { success: true };
+    } catch (error: any) {
+      console.error("Error clearing config:", error);
+      return { success: false, error: "Failed to clear personal configuration."};
+    }
+  }
   
   useEffect(() => {
     loadAzureDevOpsConfig();
   }, [loadAzureDevOpsConfig]);
 
-  return { config, isConfigLoaded, saveAzureDevOpsConfig, loadAzureDevOpsConfig };
+  return { config, isConfigLoaded, saveAzureDevOpsConfig, clearAzureDevOpsConfig, isUsingDefaultConfig, loadAzureDevOpsConfig };
 }
