@@ -35,9 +35,9 @@ export default function ConfigurePage() {
             <div className="flex justify-center mb-3">
               <ShieldCheck className="h-12 w-12 text-primary" />
             </div>
-            <CardTitle className="font-headline text-2xl">Application Configuration</CardTitle>
+            <CardTitle className="font-headline text-2xl">Configuración de la Aplicación</CardTitle>
             <CardDescription>
-              Manage your personal Azure DevOps integration settings. These are stored securely in your browser.
+              Gestiona tu configuración personal para la integración con Azure DevOps. Estos datos se guardan de forma segura.
             </CardDescription>
           </CardHeader>
           <CardContent>

@@ -61,13 +61,13 @@ export default function DashboardPage() {
       setTestCasesOutput(result);
       if (result.testCases.length === 0) {
         toast({
-          title: "Generation Complete",
-          description: "No test cases were generated. Try refining your input.",
+          title: "Generación Completa",
+          description: "No se generaron casos de prueba. Intenta refinar tu entrada.",
         });
       } else {
         toast({
-          title: "Success!",
-          description: "Test cases generated successfully.",
+          title: "¡Éxito!",
+          description: "Casos de prueba generados exitosamente.",
         });
       }
     } catch (error) {
@@ -75,7 +75,7 @@ export default function DashboardPage() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to generate test cases. Please try again.",
+        description: "Falló la generación de casos de prueba. Por favor intenta de nuevo.",
       });
       setTestCasesOutput(null);
       setGenerationMode(null);
@@ -239,7 +239,7 @@ export default function DashboardPage() {
                     Generador de Casos de Prueba
                 </CardTitle>
                 <CardDescription>
-                    Selecciona un método para generar casos de prueba. Puedes ingresar los detalles manualmente o obtenerlos directamente desde un PBI en Azure DevOps.
+                    Selecciona un método para generar casos de prueba. Puedes ingresar los detalles manually o obtenerlos directamente desde un PBI en Azure DevOps.
                 </CardDescription>
             </CardHeader>
             <CardContent>

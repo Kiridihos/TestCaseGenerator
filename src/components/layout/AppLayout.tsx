@@ -13,7 +13,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         {children}
       </main>
       <footer className="py-4 text-center text-sm text-muted-foreground border-t">
-        © {new Date().getFullYear()} Test Case Generator. All rights reserved.
+        © {new Date().getFullYear()} Test Case Generator. Todos los derechos reservados.
       </footer>
     </div>
   );

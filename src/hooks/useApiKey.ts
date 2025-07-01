@@ -66,7 +66,7 @@ export function useAzureDevOpsConfig() {
 
   const saveAzureDevOpsConfig = async (newConfig: AzureDevOpsConfig): Promise<{success: boolean; error?: string}> => {
     if (!user || !db) {
-      const errorMsg = "User not authenticated or database not available.";
+      const errorMsg = "Usuario no autenticado o base de datos no disponible.";
       toast({ variant: "destructive", title: "Error", description: errorMsg });
       return { success: false, error: errorMsg };
     }
@@ -76,19 +76,19 @@ export function useAzureDevOpsConfig() {
       setConfig(newConfig);
       setIsUsingDefaultConfig(false);
       setPersonalConfigError(null);
-      toast({ title: "Configuration Saved", description: "Your personal Azure DevOps settings have been saved." });
+      toast({ title: "Configuración Guardada", description: "Tu configuración personal de Azure DevOps ha sido guardada." });
       return { success: true };
     } catch (error: any) {
         console.error("Error saving config:", error);
-        const errorMsg = "Could not save configuration. Please check your Firestore rules.";
-        toast({ variant: "destructive", title: "Error Saving", description: errorMsg });
+        const errorMsg = "No se pudo guardar la configuración. Por favor, revisa tus reglas de Firestore.";
+        toast({ variant: "destructive", title: "Error al Guardar", description: errorMsg });
         return { success: false, error: errorMsg};
     }
   };
   
   const clearAzureDevOpsConfig = async (): Promise<{success: boolean; error?: string}> => {
      if (!user || !db) {
-      const errorMsg = "User not authenticated or database not available.";
+      const errorMsg = "Usuario no autenticado o base de datos no disponible.";
       toast({ variant: "destructive", title: "Error", description: errorMsg });
       return { success: false, error: errorMsg };
     }
@@ -96,12 +96,12 @@ export function useAzureDevOpsConfig() {
       const docRef = doc(db, "userConfigs", user.uid);
       await deleteDoc(docRef);
       await loadAzureDevOpsConfig(); // Reload to get default config
-      toast({ title: "Configuration Cleared", description: "Personal settings removed. Using default config." });
+      toast({ title: "Configuración Limpiada", description: "Configuración personal eliminada. Usando la configuración predeterminada." });
       return { success: true };
     } catch (error: any) {
       console.error("Error clearing config:", error);
-      const errorMsg = "Could not clear configuration. Please check your Firestore rules.";
-      toast({ variant: "destructive", title: "Error Clearing", description: errorMsg });
+      const errorMsg = "No se pudo limpiar la configuración. Por favor, revisa tus reglas de Firestore.";
+      toast({ variant: "destructive", title: "Error al Limpiar", description: errorMsg });
       return { success: false, error: errorMsg};
     }
   }

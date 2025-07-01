@@ -40,10 +40,10 @@ export default function LoginPage() {
               <TestTubeDiagonal className="h-8 w-8 text-primary" />
             </div>
             <CardTitle className="font-headline text-3xl">
-              {isLoginView ? 'Welcome Back' : 'Create an Account'}
+              {isLoginView ? 'Bienvenido de Nuevo' : 'Crea una Cuenta'}
             </CardTitle>
             <CardDescription>
-              {isLoginView ? 'Sign in to continue to the Test Case Generator.' : 'Enter your details to get started.'}
+              {isLoginView ? 'Inicia sesión para continuar al Generador de Casos de Prueba.' : 'Ingresa tus datos para comenzar.'}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -58,15 +58,15 @@ export default function LoginPage() {
             )}
             {isLoginView ? <LoginForm /> : <RegisterForm />}
             <div className="mt-4 text-center text-sm">
-              {isLoginView ? "Don't have an account?" : "Already have an account?"}{' '}
+              {isLoginView ? "¿No tienes una cuenta?" : "¿Ya tienes una cuenta?"}{' '}
               <Button variant="link" className="p-0 h-auto" onClick={toggleView}>
-                {isLoginView ? 'Sign up' : 'Sign in'}
+                {isLoginView ? 'Regístrate' : 'Iniciar sesión'}
               </Button>
             </div>
           </CardContent>
         </Card>
         <footer className="py-4 text-center text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Test Case Generator. All rights reserved.
+            © {new Date().getFullYear()} Test Case Generator. Todos los derechos reservados.
         </footer>
       </div>
     </div>

@@ -22,7 +22,7 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 
 const formSchema = z.object({
-  pbiId: z.string().regex(/^\d+$/, "PBI ID must be a number.").min(1, "PBI ID cannot be empty."),
+  pbiId: z.string().regex(/^\d+$/, "El ID de PBI debe ser un número.").min(1, "El ID de PBI no puede estar vacío."),
 });
 
 type PbiIdFormValues = z.infer<typeof formSchema>;
@@ -162,7 +162,7 @@ export function PbiIdForm({ isLoading, isConfigMissing, fetchedData, onFetch, on
           name="pbiId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Product Backlog Item ID</FormLabel>
+              <FormLabel>ID del Product Backlog Item</FormLabel>
               <FormControl>
                 <Input placeholder="Ingresa el ID del PBI" {...field} />
               </FormControl>

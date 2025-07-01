@@ -288,7 +288,7 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
       </CardContent>
       <CardFooter className="flex flex-col gap-4 pt-6">
         <div className="w-full space-y-2">
-            <Label htmlFor="pbiId" className="font-medium">Product Backlog Item ID</Label>
+            <Label htmlFor="pbiId" className="font-medium">ID del Product Backlog Item</Label>
             <Input 
                 id="pbiId" 
                 placeholder="Ingresa ID de PBI (ej: 12345)" 

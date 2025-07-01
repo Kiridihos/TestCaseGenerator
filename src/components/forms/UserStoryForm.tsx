@@ -20,9 +20,9 @@ import type { GenerateTestCasesInput } from "@/ai/flows/generate-test-cases";
 import { Loader2, Pencil } from "lucide-react";
 
 const formSchema = z.object({
-  title: z.string().min(5, "Title must be at least 5 characters.").max(100, "Title must be at most 100 characters."),
-  description: z.string().min(10, "Description must be at least 10 characters.").max(1000, "Description must be at most 1000 characters."),
-  acceptanceCriteria: z.string().min(10, "Acceptance Criteria must be at least 10 characters.").max(5000, "Acceptance Criteria must be at most 5000 characters."),
+  title: z.string().min(5, "El título debe tener al menos 5 caracteres.").max(100, "El título debe tener como máximo 100 caracteres."),
+  description: z.string().min(10, "La descripción debe tener al menos 10 caracteres.").max(1000, "La descripción debe tener como máximo 1000 caracteres."),
+  acceptanceCriteria: z.string().min(10, "Los criterios de aceptación deben tener al menos 10 caracteres.").max(5000, "Los criterios de aceptación deben tener como máximo 5000 caracteres."),
 });
 
 type UserStoryFormValues = z.infer<typeof formSchema>;
@@ -65,10 +65,10 @@ export function UserStoryForm({ onGenerate, isLoading, values, onValuesChange }:
             <FormItem>
               <FormLabel className="flex items-center gap-2">
                 <Pencil className="h-4 w-4 text-primary" />
-                Title
+                Título
               </FormLabel>
               <FormControl>
-                <Input placeholder="Enter user story title" {...field} />
+                <Input placeholder="Ingresa el título de la historia de usuario" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -81,11 +81,11 @@ export function UserStoryForm({ onGenerate, isLoading, values, onValuesChange }:
             <FormItem>
               <FormLabel className="flex items-center gap-2">
                 <Pencil className="h-4 w-4 text-primary" />
-                Description
+                Descripción
               </FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Describe the user story..."
+                  placeholder="Describe la historia de usuario..."
                   className="resize-y"
                   rows={4}
                   {...field}
@@ -102,11 +102,11 @@ export function UserStoryForm({ onGenerate, isLoading, values, onValuesChange }:
             <FormItem>
               <FormLabel className="flex items-center gap-2">
                 <Pencil className="h-4 w-4 text-primary" />
-                Acceptance Criteria
+                Criterios de Aceptación
               </FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="List the acceptance criteria..."
+                  placeholder="Lista los criterios de aceptación..."
                   className="resize-y"
                   rows={8}
                   {...field}
@@ -120,10 +120,10 @@ export function UserStoryForm({ onGenerate, isLoading, values, onValuesChange }:
           {isLoading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Generating...
+              Generando...
             </>
           ) : (
-            "Generate Test Cases"
+            "Generar Casos de Prueba"
           )}
         </Button>
       </form>

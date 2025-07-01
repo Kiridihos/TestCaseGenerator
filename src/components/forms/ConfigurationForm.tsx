@@ -14,9 +14,9 @@ import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { useAuth } from "@/contexts/AuthContext";
 
 const formSchema = z.object({
-  pat: z.string().trim().min(1, { message: "PAT is required." }),
-  organization: z.string().trim().min(1, { message: "Organization is required." }),
-  project: z.string().trim().min(1, { message: "Project is required." }),
+  pat: z.string().trim().min(1, { message: "El PAT es requerido." }),
+  organization: z.string().trim().min(1, { message: "La Organización es requerida." }),
+  project: z.string().trim().min(1, { message: "El Proyecto es requerido." }),
 });
 
 type ConfigurationFormValues = z.infer<typeof formSchema>;
@@ -42,7 +42,7 @@ export function ConfigurationForm() {
     return (
       <div className="flex items-center justify-center p-8">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="ml-4">Loading configuration...</p>
+        <p className="ml-4">Cargando configuración...</p>
       </div>
     );
   }
@@ -92,9 +92,9 @@ export function ConfigurationForm() {
       {isUsingDefaultConfig && !personalConfigError && (
         <Alert>
           <Globe className="h-4 w-4" />
-          <AlertTitle>Using Global Default Configuration</AlertTitle>
+          <AlertTitle>Usando Configuración Global Predeterminada</AlertTitle>
           <AlertDescription>
-            These settings are provided by the application administrator. You can save your own personal settings below to override them.
+            Esta configuración es proporcionada por el administrador de la aplicación. Puedes guardar tu propia configuración personal a continuación para sobrescribirla.
           </AlertDescription>
         </Alert>
       )} 
@@ -102,9 +102,9 @@ export function ConfigurationForm() {
       {!isUsingDefaultConfig && !personalConfigError && (
          <Alert>
             <Info className="h-4 w-4" />
-            <AlertTitle>Using Personal Configuration</AlertTitle>
+            <AlertTitle>Usando Configuración Personal</AlertTitle>
             <AlertDescription>
-                These are your personal settings. They are stored securely and linked only to your account.
+                Esta es tu configuración personal. Se almacena de forma segura y está vinculada únicamente a tu cuenta.
             </AlertDescription>
         </Alert>
       )}
@@ -120,7 +120,7 @@ export function ConfigurationForm() {
                   <KeyRound className="h-5 w-5 text-primary" /> Personal Access Token (PAT)
                 </FormLabel>
                 <FormControl>
-                  <Input type="password" placeholder="Enter your PAT" {...field} />
+                  <Input type="password" placeholder="Ingresa tu PAT" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -132,10 +132,10 @@ export function ConfigurationForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="flex items-center gap-2">
-                  <Building className="h-5 w-5 text-primary" /> Organization
+                  <Building className="h-5 w-5 text-primary" /> Organización
                 </FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter your Azure DevOps organization" {...field} />
+                  <Input placeholder="Ingresa tu organización de Azure DevOps" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -147,10 +147,10 @@ export function ConfigurationForm() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="flex items-center gap-2">
-                  <FolderGit2 className="h-5 w-5 text-primary" /> Project
+                  <FolderGit2 className="h-5 w-5 text-primary" /> Proyecto
                 </FormLabel>
                 <FormControl>
-                  <Input placeholder="Enter your Azure DevOps project name" {...field} />
+                  <Input placeholder="Ingresa el nombre de tu proyecto de Azure DevOps" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -161,10 +161,10 @@ export function ConfigurationForm() {
               {isSaving ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
+                  Guardando...
                 </>
               ) : (
-                "Save Personal Configuration"
+                "Guardar Configuración Personal"
               )}
             </Button>
             <Button
@@ -177,12 +177,12 @@ export function ConfigurationForm() {
                 {isClearing ? (
                     <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Clearing...
+                        Limpiando...
                     </>
                 ) : (
                     <>
                         <Trash className="mr-2 h-4 w-4" />
-                        Clear & Use Default
+                        Limpiar y Usar Predeterminado
                     </>
                 )}
             </Button>

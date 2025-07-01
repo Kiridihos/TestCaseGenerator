@@ -3,6 +3,7 @@
 # dependencies
 /node_modules
 /not_include
+/new
 /.pnp
 .pnp.*
 .yarn/*
