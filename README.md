@@ -173,13 +173,13 @@ Para un despliegue on-premise real, deberías usar un gestor de procesos como **
 
 ## 8. Desarrollo
 
-Para ejecutar la aplicación en modo de desarrollo:
+Para ejecutar la aplicación en modo de desarrollo, la aplicación se divide en dos procesos separados: el servidor web de Next.js (para la interfaz de usuario) y el servidor de IA de Genkit. Necesitarás dos terminales para ejecutarlos simultáneamente.
 
 1.  **Terminal 1: Ejecuta la aplicación Next.js**:
     ```bash
     npm run dev
     ```
-2.  **Terminal 2: Ejecuta el servidor de IA de Genkit**: Los flujos de IA se ejecutan en un proceso separado durante el desarrollo.
+2.  **Terminal 2: Ejecuta el servidor de IA de Genkit**: Los flujos de IA se ejecutan en este proceso separado, y el comando `watch` reiniciará el servidor automáticamente si haces cambios en los archivos de IA.
     ```bash
     npm run genkit:watch
     ```
