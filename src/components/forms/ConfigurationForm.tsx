@@ -18,7 +18,9 @@ import { Input } from "@/components/ui/input";
 import { useAzureDevOpsConfig, type AzureDevOpsConfig } from "@/hooks/useApiKey";
 import { useToast } from "@/hooks/use-toast";
 import { useEffect, useState } from "react";
-import { KeyRound, CheckCircle, Building, FolderGit2, Loader2 } from "lucide-react";
+import { KeyRound, CheckCircle, Building, FolderGit2, Loader2, AlertTriangle } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 
 const formSchema = z.object({
   pat: z.string().min(1, { message: "El Personal Access Token es obligatorio." }),
@@ -31,6 +33,7 @@ type ConfigurationFormValues = z.infer<typeof formSchema>;
 
 export function ConfigurationForm() {
   const { config, saveAzureDevOpsConfig, clearAzureDevOpsConfig, isConfigLoaded } = useAzureDevOpsConfig();
+  const { isFirebaseConfigured } = useAuth();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
 
@@ -100,6 +103,18 @@ export function ConfigurationForm() {
     } finally {
         setIsSaving(false);
     }
+  }
+
+  if (!isFirebaseConfigured) {
+    return (
+        <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Servicio de Base de Datos No Disponible</AlertTitle>
+            <AlertDescription>
+                La configuración de Firebase no está completa. No se pueden guardar los ajustes. Por favor, contacta al administrador del sistema o revisa las variables de entorno.
+            </AlertDescription>
+        </Alert>
+    );
   }
 
   if (!isConfigLoaded) {
