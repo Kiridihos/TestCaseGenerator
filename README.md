@@ -18,6 +18,7 @@ Este documento proporciona una guía completa para configurar, y desplegar la ap
     - [Usar un Gestor de Procesos (Recomendado)](#usar-un-gestor-de-procesos-recomendado)
 9. [Desarrollo](#9-desarrollo)
 10. [Pila Tecnológica](#10-pila-tecnológica)
+11. [Licencia](#11-licencia)
 
 ---
 
@@ -245,3 +246,7 @@ Necesitarás dos terminales porque cada comando inicia un proceso que "ocupa" es
 - **Gestión de Estado**: React Context & Custom Hooks
 - **Estilos**: Tailwind CSS
 - **Manejo de Formularios**: React Hook Form, Zod
+
+## 11. Licencia
+
+Este proyecto se distribuye bajo la Licencia MIT. Consulta el archivo `LICENSE` para más detalles.
