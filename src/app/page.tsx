@@ -66,7 +66,7 @@ export default function LoginPage() {
           </CardContent>
         </Card>
         <footer className="py-4 text-center text-sm text-muted-foreground">
-            © {new Date().getFullYear()} Test Case Generator. Todos los derechos reservados.
+            © {new Date().getFullYear()} TestCaseGenerator by Diego Fino With AI. Todos los derechos reservados.
         </footer>
       </div>
     </div>
