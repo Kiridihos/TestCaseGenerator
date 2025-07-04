@@ -51,31 +51,29 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
     setEditableTestCases(newTestCases);
   };
 
-  const formatStepsToHtml = (steps: Array<{ action: string; expectedResult: string }>): string => {
+  const formatStepsToXml = (steps: Array<{ action: string; expectedResult: string }>): string => {
     if (!steps || steps.length === 0) {
-      return '<p>No se proporcionaron pasos detallados.</p>';
+      return '';
     }
+    
+    // Helper to escape text for XML
+    const escape = (text: string) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 
-    let html = '<div>';
+    const stepElements = steps.map((step, index) => {
+      // The API expects HTML content that is then XML-escaped.
+      // We convert newlines to <br> and wrap in a simple div.
+      const actionHtml = `<div>${(step.action || '').replace(/\n/g, '<br />')}</div>`;
+      const expectedResultHtml = `<div>${(step.expectedResult || '').replace(/\n/g, '<br />')}</div>`;
 
-    steps.forEach((step, index) => {
-      const actionText = step.action && step.action.trim() !== "" 
-        ? step.action.replace(/\n/g, '<br />') 
-        : '<i>(sin acción especificada)</i>';
-      const expectedResultText = step.expectedResult && step.expectedResult.trim() !== "" 
-        ? step.expectedResult.replace(/\n/g, '<br />') 
-        : '<i>(sin resultado esperado especificado)</i>';
+      // For a step with an Action and an Expected Result, the type is "ValidateStep".
+      return `
+        <step id="${index + 1}" type="ValidateStep">
+          <parameterizedString isformatted="true">${escape(actionHtml)}</parameterizedString>
+          <parameterizedString isformatted="true">${escape(expectedResultHtml)}</parameterizedString>
+        </step>`;
+    }).join('');
 
-      html += `<p><strong>Paso ${index + 1}</strong></p>`;
-      html += `<p><strong>Acción:</strong></p><p>${actionText}</p>`;
-      html += `<p><strong>Resultado Esperado:</strong></p><p>${expectedResultText}</p>`;
-      if (index < steps.length - 1) {
-        html += '<hr />';
-      }
-    });
-
-    html += '</div>';
-    return html;
+    return `<steps id="0" last="${steps.length}">${stepElements}</steps>`;
   };
 
   const handlePushToDevOps = async () => {
@@ -122,14 +120,17 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
     for (const tc of editableTestCases) {
       const apiUrl = `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/$Test Case?api-version=7.1-preview.3`;
       
-      const htmlReproSteps = formatStepsToHtml(tc.steps);
+      const xmlSteps = formatStepsToXml(tc.steps);
 
       const body = [
         { "op": "add", "path": "/fields/System.Title", "value": tc.title },
         { "op": "add", "path": "/fields/System.Description", "value": tc.description ? tc.description.replace(/\n/g, '<br />') : "" },
-        { "op": "add", "path": "/fields/Microsoft.VSTS.TCM.ReproSteps", "value": htmlReproSteps },
         { "op": "add", "path": "/relations/-", "value": { "rel": "System.LinkTypes.Hierarchy-Reverse", "url": `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/${pbiId}`, "attributes": { "name": "Parent" } } }
       ];
+
+      if (xmlSteps) {
+        body.push({ "op": "add", "path": "/fields/Microsoft.VSTS.TCM.Steps", "value": xmlSteps });
+      }
 
       try {
         const response = await fetch(apiUrl, {
@@ -330,5 +331,7 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
     </Card>
   );
 }
+
+    
 
     
