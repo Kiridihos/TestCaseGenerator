@@ -10,7 +10,7 @@ Este documento proporciona una guía completa para configurar, y desplegar la ap
 5. [Configuración de Azure DevOps](#5-configuración-de-azure-devops)
 6. [Configuración de la Aplicación](#6-configuración-de-la-aplicación)
     - [Variables de Entorno (`.env`)](#variables-de-entorno-env)
-    - [Autenticación de IA](#autenticación-de-ia)
+    - [Configuración del Proveedor de IA](#configuración-del-proveedor-de-ia)
 7. [Instalación](#7-instalación)
 8. [Compilar y Ejecutar para Producción](#8-compilar-y-ejecutar-para-producción)
     - [Compilar la Aplicación](#compilar-la-aplicación)
@@ -31,7 +31,7 @@ El Generador de Casos de Prueba es una aplicación web construida con Next.js qu
 Es importante aclarar que la aplicación **no ejecuta el modelo de Inteligencia Artificial en tu servidor local**. El modelo de IA (Gemini de Google) es un servicio que se consume desde la nube. La arquitectura funciona de la siguiente manera:
 
 - **Modelo de IA (Nube)**: Es el "cerebro". Se encuentra en los servidores de Google Cloud y es quien procesa las solicitudes para generar los casos de prueba.
-- **Genkit (El Conector)**: Es el *toolkit* que se ejecuta en tu servidor. Actúa como un intermediario seguro que comunica tu aplicación con el modelo de IA.
+- **Genkit (El Conector)**: Es el *toolkit* que se ejecuta en tu servidor. Actúa como un intermediario seguro que comunica tu aplicación con el modelo de IA seleccionado.
 - **Autenticación (La "Llave")**: Para que tu servidor pueda usar el servicio de IA, necesita autenticarse con Google Cloud. Esto se hace a través de credenciales que se configuran en el archivo `.env`.
 
 Por lo tanto, el comando `npm run genkit:watch` inicia este conector local, no el modelo de IA en sí.
@@ -44,7 +44,7 @@ Antes de comenzar, asegúrate de que tu servidor tenga el siguiente software ins
 - **Git**: Para clonar el repositorio.
 - **Cuenta de Firebase**: Necesitarás un proyecto de Firebase para manejar la autenticación de usuarios y almacenar configuraciones específicas del usuario.
 - **Cuenta de Azure DevOps**: Necesitas una cuenta con acceso a una organización y un proyecto donde se gestionan los elementos de trabajo.
-- **Cuenta de Google Cloud**: Necesitarás una cuenta con Google para obtener las credenciales de IA (Gemini).
+- **Cuenta de Google Cloud**: Necesitarás una cuenta para obtener las credenciales de la API de IA.
 
 ## 4. Configuración del Proyecto Firebase
 
@@ -122,47 +122,27 @@ NEXT_PUBLIC_AZURE_DEVOPS_ORGANIZATION=
 NEXT_PUBLIC_AZURE_DEVOPS_PROJECT=
 
 # ----------------------------------
-# CONFIGURACIÓN DE GOOGLE AI (Gemini)
+# CONFIGURACIÓN DEL PROVEEDOR DE IA (Requerido)
 # ----------------------------------
-# La aplicación necesita autenticarse con Google para usar los modelos de IA.
-# Elige solo UNO de los siguientes métodos. El método de la API Key es más simple.
-# El método de Cuenta de Servicio es más seguro para producción.
-
-# --- Método A: Clave de API (Más simple) ---
+# La aplicación utiliza Google AI (Gemini).
 # Obtén una clave desde Google AI Studio: https://aistudio.google.com/app/apikey
-# Descomenta y pega tu clave aquí.
-# GOOGLE_API_KEY=
+# Si dejas esta clave en blanco, la aplicación intentará usar
+# las Credenciales Predeterminadas de la Aplicación (ADC),
+# ideal para entornos gestionados como Firebase App Hosting.
+GOOGLE_API_KEY=
 
-# --- Método B: Cuenta de Servicio (Más seguro) ---
-# Ruta a tu archivo de clave de cuenta de servicio de Google Cloud.
-# Si usas este método, deja GOOGLE_API_KEY comentado.
-# Consulta la sección "Autenticación de IA" para más detalles.
-GOOGLE_APPLICATION_CREDENTIALS=
 ```
 
-### Autenticación de IA
+### Configuración del Proveedor de IA
 
-> **Nota para usuarios de Firebase Studio / App Hosting:** Si estás ejecutando esta aplicación dentro de Firebase Studio o la has desplegado en Firebase App Hosting, **la autenticación con Google AI se gestiona automáticamente**. Las siguientes instrucciones son para despliegues en servidores externos (on-premise).
+La aplicación utiliza **Google Gemini** para generar los casos de prueba.
 
-#### Configuración para Google AI (Gemini)
-
-Tienes dos opciones:
-
-##### Opción 1A: Clave de API (Simple)
-Este es el método más rápido para empezar.
-1.  Ve a [Google AI Studio](https://aistudio.google.com/app/apikey).
-2.  Haz clic en "Create API key in new project".
-3.  Copia la clave generada.
-4.  En tu archivo `.env`, descomenta la línea `GOOGLE_API_KEY` y pega tu clave allí.
-
-##### Opción 1B: Cuenta de Servicio (Recomendado para Producción)
-Este método es más seguro y robusto.
 1.  **Habilitar la API de Vertex AI**: En tu proyecto de Google Cloud, habilita la "Vertex AI API".
-2.  **Crear una Cuenta de Servicio**: En IAM, crea una cuenta de servicio con el rol de **Usuario de Vertex AI**.
-3.  **Generar Clave JSON**: Crea y descarga una clave JSON para la cuenta de servicio.
-4.  **Configurar el Servidor**:
-    - Coloca el archivo JSON en un lugar seguro de tu servidor.
-    - En `.env`, establece `GOOGLE_APPLICATION_CREDENTIALS` a la ruta absoluta de ese archivo. Asegúrate de que `GOOGLE_API_KEY` esté comentado.
+2.  **Obtener una Clave de API**:
+    - Ve a [Google AI Studio](https://aistudio.google.com/app/apikey).
+    - Haz clic en "Create API key in new project".
+    - Copia la clave generada.
+    - En tu archivo `.env`, pega tu clave en `GOOGLE_API_KEY`.
 
 ## 7. Instalación
 
@@ -238,7 +218,7 @@ Necesitarás dos terminales porque cada comando inicia un proceso que "ocupa" es
 - **UI (Interfaz de Usuario)**: React, ShadCN UI, Tailwind CSS
 - **Autenticación**: Firebase Authentication
 - **Base de Datos**: Firestore (para configuraciones específicas de usuario)
-- **IA**: Genkit (usando los modelos Gemini de Google)
+- **IA**: Genkit (usando modelos Gemini de Google)
 - **Gestión de Estado**: React Context & Custom Hooks
 - **Estilos**: Tailwind CSS
 - **Manejo de Formularios**: React Hook Form, Zod
