@@ -167,11 +167,10 @@ export default function DashboardPage() {
 
     } catch (error: any) {
         console.error("Error fetching PBI details:", error);
-        // This is the improved part. It will now show the specific API error.
         toast({
             variant: "destructive",
             title: "Error al Obtener PBI",
-            description: error.message || `No se pudo obtener el PBI ${id}. Verifica el ID y tu configuración.`,
+            description: `No se pudo obtener el PBI ${id}. Verifica el ID y tu configuración.`,
         });
         return null;
     }
