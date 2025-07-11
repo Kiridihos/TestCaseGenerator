@@ -14,6 +14,17 @@ import { CheckCircle, ListChecks, UploadCloud, AlertTriangle, Loader2, Pencil, C
 import Link from "next/link";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface TestCaseDisplayProps {
   testCases: TestCase[];
@@ -25,22 +36,33 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
   const { toast } = useToast();
   const [pbiId, setPbiId] = useState(initialPbiId || "");
   const [isPushing, setIsPushing] = useState(false);
+  const [pushSucceeded, setPushSucceeded] = useState(false);
   const [editableTestCases, setEditableTestCases] = useState<TestCase[]>([]);
   const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
-    // Deep copy to avoid mutating props
+    // Deep copy to avoid mutating props and reset push status
     setEditableTestCases(JSON.parse(JSON.stringify(testCases)));
+    setPushSucceeded(false);
   }, [testCases]);
 
   useEffect(() => {
     setPbiId(initialPbiId || "");
   }, [initialPbiId]);
+  
+  const handleEditToggle = () => {
+    setIsEditing(!isEditing);
+    // If user starts editing, we should allow a new push.
+    if (!isEditing) {
+      setPushSucceeded(false);
+    }
+  }
 
   const handleTestCaseChange = (index: number, field: 'title' | 'description', value: string) => {
     const newTestCases = [...editableTestCases];
     newTestCases[index] = { ...newTestCases[index], [field]: value };
     setEditableTestCases(newTestCases);
+    setPushSucceeded(false);
   };
 
   const handleStepChange = (testCaseIndex: number, stepIndex: number, field: 'action' | 'expectedResult', value: string) => {
@@ -49,6 +71,7 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
     newSteps[stepIndex] = { ...newSteps[stepIndex], [field]: value };
     newTestCases[testCaseIndex].steps = newSteps;
     setEditableTestCases(newTestCases);
+    setPushSucceeded(false);
   };
 
   const formatStepsToXml = (steps: Array<{ action: string; expectedResult: string }>): string => {
@@ -56,16 +79,12 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
       return '';
     }
     
-    // Helper to escape text for XML
     const escape = (text: string) => text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 
     const stepElements = steps.map((step, index) => {
-      // The API expects HTML content that is then XML-escaped.
-      // We convert newlines to <br> and wrap in a simple div.
       const actionHtml = `<div>${(step.action || '').replace(/\n/g, '<br />')}</div>`;
       const expectedResultHtml = `<div>${(step.expectedResult || '').replace(/\n/g, '<br />')}</div>`;
 
-      // For a step with an Action and an Expected Result, the type is "ValidateStep".
       return `
         <step id="${index + 1}" type="ValidateStep">
           <parameterizedString isformatted="true">${escape(actionHtml)}</parameterizedString>
@@ -76,41 +95,7 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
     return `<steps id="0" last="${steps.length}">${stepElements}</steps>`;
   };
 
-  const handlePushToDevOps = async () => {
-    if (!isConfigLoaded) {
-      toast({
-        title: "Cargando Configuración",
-        description: "Por favor espera mientras verificamos tu configuración de Azure DevOps.",
-        variant: "default"
-      });
-      return;
-    }
-
-    if (!devOpsConfig.pat || !devOpsConfig.organization || !devOpsConfig.project) {
-      toast({
-        title: "Configuración de Azure DevOps Incompleta",
-        description: (
-          <div className="flex flex-col gap-2">
-            <p>Por favor configura tu PAT, Organización y Proyecto en ajustes para enviar casos de prueba.</p>
-            <Link href="/configure" legacyBehavior passHref>
-              <Button variant="outline" size="sm">Ir a Configuración</Button>
-            </Link>
-          </div>
-        ),
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!pbiId.trim()) {
-      toast({
-        title: "ID de PBI Faltante",
-        description: "Por favor ingresa el ID del Product Backlog Item para asociar los casos de prueba.",
-        variant: "destructive",
-      });
-      return;
-    }
-
+  const executePush = async () => {
     setIsPushing(true);
     let successCount = 0;
     let errorCount = 0;
@@ -166,16 +151,80 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
 
     if (successCount > 0 && errorCount === 0) {
       toast({ title: "¡Envío Exitoso!", description: `${successCount} caso(s) de prueba enviado(s) a Azure DevOps y enlazado(s) al PBI ${pbiId}.`, action: <CheckCircle className="text-green-500" /> });
+      setPushSucceeded(true);
     } else if (successCount > 0 && errorCount > 0) {
        toast({ title: "Éxito Parcial", description: `${successCount} caso(s) de prueba enviado(s). ${errorCount} fallaron. Revisa la consola.`, variant: "default" });
+       setPushSucceeded(true); // Still consider it a success for the ones that went through
     } else if (errorCount > 0 && successCount === 0) {
       toast({ title: "Envío Fallido", description: `Todos los ${errorCount} caso(s) de prueba fallaron al enviar. Revisa la consola.`, variant: "destructive" });
+    }
+  };
+
+  const handlePushToDevOps = async () => {
+    if (!isConfigLoaded) {
+      toast({
+        title: "Cargando Configuración",
+        description: "Por favor espera mientras verificamos tu configuración de Azure DevOps.",
+        variant: "default"
+      });
+      return;
+    }
+
+    if (!devOpsConfig.pat || !devOpsConfig.organization || !devOpsConfig.project) {
+      toast({
+        title: "Configuración de Azure DevOps Incompleta",
+        description: (
+          <div className="flex flex-col gap-2">
+            <p>Por favor configura tu PAT, Organización y Proyecto en ajustes para enviar casos de prueba.</p>
+            <Link href="/configure" legacyBehavior passHref>
+              <Button variant="outline" size="sm">Ir a Configuración</Button>
+            </Link>
+          </div>
+        ),
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!pbiId.trim()) {
+      toast({
+        title: "ID de PBI Faltante",
+        description: "Por favor ingresa el ID del Product Backlog Item para asociar los casos de prueba.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // This is where the check happens. The `AlertDialog` will trigger `executePush` if confirmed.
+    // If `pushSucceeded` is false, it will just call `executePush` directly.
+    if (!pushSucceeded) {
+        executePush();
     }
   };
   
   const isConfigMissing = !devOpsConfig.pat || !devOpsConfig.organization || !devOpsConfig.project;
   
   const readOnlyClasses = "read-only:bg-background read-only:border read-only:shadow-sm read-only:cursor-text read-only:ring-0 read-only:focus-visible:ring-0 read-only:focus-visible:ring-offset-0";
+
+  const PushButton = (
+    <Button 
+        onClick={handlePushToDevOps} 
+        className="bg-accent hover:bg-accent/90 text-accent-foreground w-full sm:w-auto"
+        disabled={!isConfigLoaded || isConfigMissing || isPushing || !pbiId.trim() || editableTestCases.length === 0}
+    >
+        {isPushing ? (
+            <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Enviando...
+            </>
+        ) : (
+            <>
+                <UploadCloud className="mr-2 h-4 w-4" />
+                Enviar a Azure DevOps
+            </>
+        )}
+    </Button>
+  );
 
   return (
     <Card className="w-full shadow-xl">
@@ -185,14 +234,14 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
             <ListChecks className="h-6 w-6 text-primary" />
             <CardTitle className="font-headline">Casos de Prueba Generados ({editableTestCases.length})</CardTitle>
             </div>
-             <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)}>
+             <Button variant="outline" size="sm" onClick={handleEditToggle}>
                 {isEditing ? <Check className="mr-2 h-4 w-4" /> : <Pencil className="mr-2 h-4 w-4" />}
                 {isEditing ? 'Finalizar Edición' : 'Editar'}
             </Button>
         </div>
         <CardDescription>
           {isEditing 
-            ? "Modifica los detalles de los casos de prueba a continuación."
+            ? "Modifica los detalles de los casos de prueba a continuación. Cualquier cambio te permitirá enviarlos de nuevo."
             : "Revisa los casos de prueba. Haz clic en 'Editar' para modificarlos."
           }
         </CardDescription>
@@ -309,25 +358,33 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
                     </Link>
                 </div>
             )}
-            <Button 
-              onClick={handlePushToDevOps} 
-              className="bg-accent hover:bg-accent/90 text-accent-foreground w-full sm:w-auto"
-              disabled={!isConfigLoaded || isConfigMissing || isPushing || !pbiId.trim() || editableTestCases.length === 0}
-            >
-              {isPushing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Enviando...
-                </>
-              ) : (
-                <>
-                  <UploadCloud className="mr-2 h-4 w-4" />
-                  Enviar a Azure DevOps
-                </>
-              )}
-            </Button>
+            
+            {pushSucceeded ? (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  {PushButton}
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>¿Confirmas reenviar los Casos de Prueba?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Estos casos de prueba ya fueron enviados exitosamente a Azure DevOps. Si continúas, se crearán como nuevos casos de prueba duplicados. ¿Estás seguro de que quieres hacerlo?
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={executePush}>Sí, reenviar</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            ) : (
+              PushButton
+            )}
+
         </div>
       </CardFooter>
     </Card>
   );
 }
+
+    
