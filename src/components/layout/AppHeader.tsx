@@ -5,8 +5,9 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Settings, TestTubeDiagonal, LogOut, Loader2 } from 'lucide-react';
+import { Settings, TestTubeDiagonal, LogOut, Loader2, FolderGit2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAzureDevOpsConfig } from '@/hooks/useApiKey';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   DropdownMenu,
@@ -75,7 +76,8 @@ const UserNav = () => {
 };
 
 export default function AppHeader() {
-  const { user, loading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const { config: devOpsConfig, isConfigLoaded } = useAzureDevOpsConfig();
   const pathname = usePathname();
   const [navigatingTo, setNavigatingTo] = useState<string | null>(null);
 
@@ -93,23 +95,48 @@ export default function AppHeader() {
 
   return (
     <header className="bg-card border-b sticky top-0 z-50 shadow-sm">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <Link 
-          href="/dashboard" 
-          className={cn(
-            "flex items-center gap-2 text-xl font-headline font-semibold text-primary hover:text-primary/80 transition-colors",
-            isNavigating && "pointer-events-none opacity-50"
+      <div className="container mx-auto px-4 h-20 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Link
+              href="/dashboard"
+              className={cn(
+                  "flex items-center text-primary hover:text-primary/80 transition-colors",
+                  isNavigating && "pointer-events-none opacity-50"
+              )}
+              onClick={() => handleNavigation('/dashboard')}
+              aria-disabled={isNavigating}
+          >
+              {navigatingTo === '/dashboard' ? (
+                  <Loader2 className="h-8 w-8 animate-spin" />
+              ) : (
+                  <TestTubeDiagonal className="h-8 w-8" />
+              )}
+          </Link>
+          <div className="flex flex-col">
+            <Link 
+              href="/dashboard" 
+              className={cn(
+                "text-xl font-headline font-semibold text-primary hover:text-primary/80 transition-colors",
+                isNavigating && "pointer-events-none opacity-50"
+                )}
+              onClick={() => handleNavigation('/dashboard')}
+              aria-disabled={isNavigating}
+            >
+              Test Case Generator
+            </Link>
+            {!isConfigLoaded ? (
+              <Skeleton className="h-4 w-32 mt-1" />
+            ) : (
+              devOpsConfig.project && (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <FolderGit2 className="h-3 w-3" />
+                    <span>{devOpsConfig.project}</span>
+                </div>
+              )
             )}
-          onClick={() => handleNavigation('/dashboard')}
-          aria-disabled={isNavigating}
-        >
-          {navigatingTo === '/dashboard' ? (
-             <Loader2 className="h-7 w-7 animate-spin" />
-          ) : (
-             <TestTubeDiagonal className="h-7 w-7" />
-          )}
-          <span>Test Case Generator</span>
-        </Link>
+          </div>
+        </div>
+        
         <nav className="flex items-center gap-4">
           <Link 
             href="/configure" 
@@ -130,7 +157,7 @@ export default function AppHeader() {
               )}
             </Button>
           </Link>
-          {loading ? (
+          {authLoading ? (
             <Skeleton className="h-8 w-8 rounded-full" />
           ) : user ? (
             <UserNav />

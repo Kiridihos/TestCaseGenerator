@@ -12,7 +12,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       <main className="flex-grow">
         {children}
       </main>
-      <footer className="py-4 text-center text-sm text-muted-foreground border-t">
+      <footer className="py-4 text-center text-sm text-muted-foreground border-t bg-background">
         © {new Date().getFullYear()} TestCaseGenerator by Diego Fino With AI. Todos los derechos reservados.
       </footer>
     </div>
