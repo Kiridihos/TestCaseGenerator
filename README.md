@@ -113,6 +113,14 @@ NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
 NEXT_PUBLIC_FIREBASE_APP_ID=
 
 # ----------------------------------
+# CONFIGURACIÓN DE LA APLICACIÓN
+# ----------------------------------
+# Habilita o deshabilita el registro de nuevos usuarios.
+# Ponlo en "true" para permitir que nuevos usuarios se registren (valor por defecto).
+# Ponlo en "false" para ocultar el botón de registro y solo permitir el inicio de sesión.
+NEXT_PUBLIC_ENABLE_REGISTRATION=true
+
+# ----------------------------------
 # CONFIGURACIÓN DE AZURE DEVOPS (Opcional - Predeterminado Global)
 # ----------------------------------
 # Si completas estos campos, serán la configuración predeterminada para todos los nuevos usuarios.

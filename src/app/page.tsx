@@ -15,11 +15,21 @@ export default function LoginPage() {
   const router = useRouter();
   const [isLoginView, setIsLoginView] = useState(true);
 
+  // Read the environment variable. Default to 'true' if not set.
+  const enableRegistration = process.env.NEXT_PUBLIC_ENABLE_REGISTRATION !== 'false';
+
   useEffect(() => {
     if (!loading && user) {
       router.push('/dashboard');
     }
   }, [user, loading, router]);
+  
+  // If registration is disabled, force the login view.
+  useEffect(() => {
+    if (!enableRegistration) {
+      setIsLoginView(true);
+    }
+  }, [enableRegistration]);
 
   if (loading || user) {
     return (
@@ -29,7 +39,11 @@ export default function LoginPage() {
     );
   }
 
-  const toggleView = () => setIsLoginView(!isLoginView);
+  const toggleView = () => {
+    if (enableRegistration) {
+      setIsLoginView(!isLoginView);
+    }
+  };
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4">
@@ -57,12 +71,15 @@ export default function LoginPage() {
                 </Alert>
             )}
             {isLoginView ? <LoginForm /> : <RegisterForm />}
-            <div className="mt-4 text-center text-sm">
-              {isLoginView ? "¿No tienes una cuenta?" : "¿Ya tienes una cuenta?"}{' '}
-              <Button variant="link" className="p-0 h-auto" onClick={toggleView}>
-                {isLoginView ? 'Regístrate' : 'Iniciar sesión'}
-              </Button>
-            </div>
+            
+            {enableRegistration && (
+              <div className="mt-4 text-center text-sm">
+                {isLoginView ? "¿No tienes una cuenta?" : "¿Ya tienes una cuenta?"}{' '}
+                <Button variant="link" className="p-0 h-auto" onClick={toggleView}>
+                  {isLoginView ? 'Regístrate' : 'Iniciar sesión'}
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
         <footer className="py-4 text-center text-sm text-muted-foreground">
