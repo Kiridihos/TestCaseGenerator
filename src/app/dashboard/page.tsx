@@ -113,30 +113,175 @@ export default function DashboardPage() {
         const data = await response.json();
         
         const getTextFromRichField = (html: string | undefined): string => {
-            if (!html) return "";
-            if (typeof window === 'undefined') return html;
+            if (!html || typeof window === 'undefined') {
+                return html || "";
+            }
 
-            // Use the browser's DOM parser to accurately convert HTML to text
             const doc = new DOMParser().parseFromString(html, 'text/html');
-            
-            // For block-level elements, add a newline before processing them
-            const blockTags = ['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'br', 'hr', 'blockquote', 'pre'];
-            doc.querySelectorAll(blockTags.join(',')).forEach(el => {
-                // Insert a newline before the element, but not if it's the very first element
-                if (el.previousSibling) {
-                    el.insertAdjacentText('beforebegin', '\n');
+            let output = '';
+
+            function traverse(node: Node, listLevel: number, listCounter: number): number {
+                if (node.nodeType === Node.TEXT_NODE) {
+                    output += node.textContent;
+                } else if (node.nodeType === Node.ELEMENT_NODE) {
+                    const element = node as HTMLElement;
+                    const tagName = element.tagName.toLowerCase();
+                    let childrenCounter = 1;
+
+                    // Handle block-level elements by adding newlines
+                    if (['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'pre'].includes(tagName)) {
+                        if (output.length > 0 && !output.endsWith('\n\n')) {
+                            output += '\n\n';
+                        }
+                    }
+
+                    // Process children
+                    element.childNodes.forEach(child => {
+                        childrenCounter = traverse(child, listLevel, childrenCounter);
+                    });
+
+                    // Add post-element formatting
+                    switch (tagName) {
+                        case 'li':
+                            const prefix = '  '.repeat(listLevel -1);
+                            let bullet = '- '; // Default for ul
+                            if (element.parentElement?.tagName.toLowerCase() === 'ol') {
+                                bullet = `${listCounter}. `;
+                            }
+                            
+                            // Re-check indentation level for list markers
+                            let current = element.parentElement;
+                            let indentLevel = 0;
+                            while(current) {
+                                if (current.tagName.toLowerCase() === 'ul' || current.tagName.toLowerCase() === 'ol') {
+                                    indentLevel++;
+                                }
+                                current = current.parentElement;
+                            }
+                            const finalPrefix = '  '.repeat(Math.max(0, indentLevel - 1));
+
+                            output = output.trimEnd(); // Remove trailing space from content
+                            
+                            // Prepend the list item with its bullet and proper indentation
+                            const contentLines = output.split('\n');
+                            let lastLine = contentLines.pop() || '';
+                            
+                            lastLine = `\n${finalPrefix}${bullet}${lastLine.trimStart()}`;
+                            
+                            output = [...contentLines, lastLine].join('\n');
+                            
+                            return listCounter + 1;
+                        case 'ul':
+                        case 'ol':
+                             if (!output.endsWith('\n\n')) output += '\n';
+                            break;
+                        case 'br':
+                            if (!output.endsWith('\n')) output += '\n';
+                            break;
+                         case 'p':
+                         case 'div':
+                            if (!output.endsWith('\n\n')) output += '\n';
+                            break;
+                    }
                 }
-            });
+                return listCounter; // Return counter for siblings
+            }
+            
+            // Custom traversal logic that handles list counters
+            function traverseNodes(nodes: NodeListOf<ChildNode>, level: number) {
+                let olCounter = 1;
+                nodes.forEach(node => {
+                    if (node.nodeType === Node.ELEMENT_NODE) {
+                        const element = node as HTMLElement;
+                        const tagName = element.tagName.toLowerCase();
+                        
+                        if (tagName === 'p' && output.length > 0 && !output.endsWith('\n\n')) {
+                            output += '\n\n';
+                        }
 
-            // The browser's `innerText` property does a great job of handling whitespace
-            // and respecting the structure created by the newlines we added.
-            let text = (doc.body as HTMLElement).innerText;
+                        if (tagName === 'ol') {
+                            let counter = 1;
+                            element.childNodes.forEach(childNode => {
+                                if (childNode.nodeType === Node.ELEMENT_NODE && childNode.tagName.toLowerCase() === 'li') {
+                                    output += `${counter}. `;
+                                    traverseNodes(childNode.childNodes, level + 1);
+                                    output += '\n';
+                                    counter++;
+                                }
+                            });
+                        } else if (tagName === 'ul') {
+                            element.childNodes.forEach(childNode => {
+                                if (childNode.nodeType === Node.ELEMENT_NODE && childNode.tagName.toLowerCase() === 'li') {
+                                    output += '  '.repeat(level) + '• ';
+                                    traverseNodes(childNode.childNodes, level + 1);
+                                    output += '\n';
+                                }
+                            });
+                        } else {
+                             if (element.childNodes.length > 0) {
+                                traverseNodes(element.childNodes, level);
+                            }
+                        }
+                    } else if (node.nodeType === Node.TEXT_NODE) {
+                        output += node.textContent?.trim() + ' ';
+                    }
+                });
+            }
 
-            // Clean up potential multiple newlines into a maximum of two
-            text = text.replace(/\n\s*\n\s*\n/g, '\n\n');
+            // A simpler, more direct traversal for better text extraction
+            function recursiveWalk(node: Node, level: number, listCounters: number[]) {
+              let text = '';
+              const isList = node.nodeName === 'OL' || node.nodeName === 'UL';
+              
+              if (isList) {
+                listCounters.push(1);
+              }
 
-            return text.trim();
+              node.childNodes.forEach(child => {
+                if (child.nodeType === Node.TEXT_NODE) {
+                  text += child.textContent;
+                } else if (child.nodeType === Node.ELEMENT_NODE) {
+                  const el = child as HTMLElement;
+                  switch (el.nodeName) {
+                    case 'P':
+                    case 'DIV':
+                    case 'H1':
+                    case 'H2':
+                    case 'H3':
+                      text += '\n' + recursiveWalk(el, level, listCounters) + '\n';
+                      break;
+                    case 'LI':
+                      const indent = '  '.repeat(level);
+                      const parent = el.parentNode as HTMLElement;
+                      if (parent.nodeName === 'OL') {
+                        text += `\n${indent}${listCounters[level]}. ${recursiveWalk(el, level + 1, listCounters).trim()}`;
+                        listCounters[level]++;
+                      } else { // UL
+                        const bullets = ['•', 'o', '■'];
+                        const bullet = bullets[level % bullets.length];
+                        text += `\n${indent}${bullet} ${recursiveWalk(el, level + 1, listCounters).trim()}`;
+                      }
+                      break;
+                    case 'BR':
+                      text += '\n';
+                      break;
+                    default:
+                      text += recursiveWalk(el, level, listCounters);
+                  }
+                }
+              });
+
+              if (isList) {
+                listCounters.pop();
+              }
+              return text;
+            }
+
+            const rawText = recursiveWalk(doc.body, 0, []);
+            // Final cleanup: consolidate multiple newlines
+            return rawText.replace(/\n\s*\n\s*\n/g, '\n\n').trim();
         };
+
 
         const acceptanceCriteria = getTextFromRichField(data.fields["Microsoft.VSTS.Common.AcceptanceCriteria"]);
         const description = getTextFromRichField(data.fields["System.Description"]);
@@ -162,7 +307,7 @@ export default function DashboardPage() {
         toast({
             variant: "destructive",
             title: "Error al Obtener PBI",
-            description: `No se pudo obtener el PBI ${id}. Verifica el ID y tu configuración.`,
+            description: error.message || `No se pudo obtener el PBI ${id}. Verifica el ID y tu configuración.`,
         });
         return null;
     }
@@ -321,3 +466,5 @@ export default function DashboardPage() {
     </AppLayout>
   );
 }
+
+    
