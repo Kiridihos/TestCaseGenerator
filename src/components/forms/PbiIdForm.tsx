@@ -34,6 +34,7 @@ export interface PbiDetails {
 }
 
 interface PbiIdFormProps {
+  pbiId: string;
   isLoading: boolean;
   isConfigMissing: boolean;
   fetchedData: PbiDetails | null;
@@ -43,7 +44,7 @@ interface PbiIdFormProps {
   onDataChange: (data: PbiDetails) => void;
 }
 
-export function PbiIdForm({ isLoading, isConfigMissing, fetchedData, onFetch, onGenerate, onReset, onDataChange }: PbiIdFormProps) {
+export function PbiIdForm({ pbiId, isLoading, isConfigMissing, fetchedData, onFetch, onGenerate, onReset, onDataChange }: PbiIdFormProps) {
   const [isEditing, setIsEditing] = useState(false);
 
   const form = useForm<PbiIdFormValues>({
@@ -75,7 +76,7 @@ export function PbiIdForm({ isLoading, isConfigMissing, fetchedData, onFetch, on
             <CardHeader>
                 <div className="flex justify-between items-start">
                     <div>
-                        <CardTitle>Información del PBI</CardTitle>
+                        <CardTitle>Información del PBI {pbiId}</CardTitle>
                         <CardDescription>
                             {isEditing 
                                 ? "Modifica los detalles obtenidos de Azure DevOps." 

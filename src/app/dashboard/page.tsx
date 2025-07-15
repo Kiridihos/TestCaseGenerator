@@ -84,7 +84,7 @@ export default function DashboardPage() {
     }
   };
   
-  const fetchPbiDetails = async (id: string): Promise<PbiDetails | null> => {
+ const fetchPbiDetails = async (id: string): Promise<PbiDetails | null> => {
     if (!devOpsConfig.pat || !devOpsConfig.organization || !devOpsConfig.project) {
         toast({
             title: "Configuración de Azure DevOps Incompleta",
@@ -118,123 +118,13 @@ export default function DashboardPage() {
             }
 
             const doc = new DOMParser().parseFromString(html, 'text/html');
-            let output = '';
-
-            function traverse(node: Node, listLevel: number, listCounter: number): number {
-                if (node.nodeType === Node.TEXT_NODE) {
-                    output += node.textContent;
-                } else if (node.nodeType === Node.ELEMENT_NODE) {
-                    const element = node as HTMLElement;
-                    const tagName = element.tagName.toLowerCase();
-                    let childrenCounter = 1;
-
-                    // Handle block-level elements by adding newlines
-                    if (['p', 'div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'pre'].includes(tagName)) {
-                        if (output.length > 0 && !output.endsWith('\n\n')) {
-                            output += '\n\n';
-                        }
-                    }
-
-                    // Process children
-                    element.childNodes.forEach(child => {
-                        childrenCounter = traverse(child, listLevel, childrenCounter);
-                    });
-
-                    // Add post-element formatting
-                    switch (tagName) {
-                        case 'li':
-                            const prefix = '  '.repeat(listLevel -1);
-                            let bullet = '- '; // Default for ul
-                            if (element.parentElement?.tagName.toLowerCase() === 'ol') {
-                                bullet = `${listCounter}. `;
-                            }
-                            
-                            // Re-check indentation level for list markers
-                            let current = element.parentElement;
-                            let indentLevel = 0;
-                            while(current) {
-                                if (current.tagName.toLowerCase() === 'ul' || current.tagName.toLowerCase() === 'ol') {
-                                    indentLevel++;
-                                }
-                                current = current.parentElement;
-                            }
-                            const finalPrefix = '  '.repeat(Math.max(0, indentLevel - 1));
-
-                            output = output.trimEnd(); // Remove trailing space from content
-                            
-                            // Prepend the list item with its bullet and proper indentation
-                            const contentLines = output.split('\n');
-                            let lastLine = contentLines.pop() || '';
-                            
-                            lastLine = `\n${finalPrefix}${bullet}${lastLine.trimStart()}`;
-                            
-                            output = [...contentLines, lastLine].join('\n');
-                            
-                            return listCounter + 1;
-                        case 'ul':
-                        case 'ol':
-                             if (!output.endsWith('\n\n')) output += '\n';
-                            break;
-                        case 'br':
-                            if (!output.endsWith('\n')) output += '\n';
-                            break;
-                         case 'p':
-                         case 'div':
-                            if (!output.endsWith('\n\n')) output += '\n';
-                            break;
-                    }
-                }
-                return listCounter; // Return counter for siblings
-            }
             
-            // Custom traversal logic that handles list counters
-            function traverseNodes(nodes: NodeListOf<ChildNode>, level: number) {
-                let olCounter = 1;
-                nodes.forEach(node => {
-                    if (node.nodeType === Node.ELEMENT_NODE) {
-                        const element = node as HTMLElement;
-                        const tagName = element.tagName.toLowerCase();
-                        
-                        if (tagName === 'p' && output.length > 0 && !output.endsWith('\n\n')) {
-                            output += '\n\n';
-                        }
-
-                        if (tagName === 'ol') {
-                            let counter = 1;
-                            element.childNodes.forEach(childNode => {
-                                if (childNode.nodeType === Node.ELEMENT_NODE && childNode.tagName.toLowerCase() === 'li') {
-                                    output += `${counter}. `;
-                                    traverseNodes(childNode.childNodes, level + 1);
-                                    output += '\n';
-                                    counter++;
-                                }
-                            });
-                        } else if (tagName === 'ul') {
-                            element.childNodes.forEach(childNode => {
-                                if (childNode.nodeType === Node.ELEMENT_NODE && childNode.tagName.toLowerCase() === 'li') {
-                                    output += '  '.repeat(level) + '• ';
-                                    traverseNodes(childNode.childNodes, level + 1);
-                                    output += '\n';
-                                }
-                            });
-                        } else {
-                             if (element.childNodes.length > 0) {
-                                traverseNodes(element.childNodes, level);
-                            }
-                        }
-                    } else if (node.nodeType === Node.TEXT_NODE) {
-                        output += node.textContent?.trim() + ' ';
-                    }
-                });
-            }
-
-            // A simpler, more direct traversal for better text extraction
-            function recursiveWalk(node: Node, level: number, listCounters: number[]) {
+            function recursiveWalk(node: Node, level: number, listCounters: { [key: number]: number }): string {
               let text = '';
               const isList = node.nodeName === 'OL' || node.nodeName === 'UL';
               
               if (isList) {
-                listCounters.push(1);
+                listCounters[level] = 1;
               }
 
               node.childNodes.forEach(child => {
@@ -248,18 +138,26 @@ export default function DashboardPage() {
                     case 'H1':
                     case 'H2':
                     case 'H3':
-                      text += '\n' + recursiveWalk(el, level, listCounters) + '\n';
+                      // Add double newline for block elements if needed
+                      if (text.length > 0 && !text.endsWith('\n\n')) {
+                          text += '\n\n';
+                      }
+                      text += recursiveWalk(el, level, listCounters);
+                      if (!text.endsWith('\n\n')) {
+                          text += '\n\n';
+                      }
                       break;
                     case 'LI':
                       const indent = '  '.repeat(level);
                       const parent = el.parentNode as HTMLElement;
                       if (parent.nodeName === 'OL') {
-                        text += `\n${indent}${listCounters[level]}. ${recursiveWalk(el, level + 1, listCounters).trim()}`;
-                        listCounters[level]++;
+                          const counter = listCounters[level] || 1;
+                          text += `\n${indent}${counter}. ${recursiveWalk(el, level + 1, listCounters).trim()}`;
+                          listCounters[level] = counter + 1;
                       } else { // UL
-                        const bullets = ['•', 'o', '■'];
-                        const bullet = bullets[level % bullets.length];
-                        text += `\n${indent}${bullet} ${recursiveWalk(el, level + 1, listCounters).trim()}`;
+                          const bullets = ['-', '*', '•']; // Cycle through bullets for nested lists
+                          const bullet = bullets[level % bullets.length];
+                          text += `\n${indent}${bullet} ${recursiveWalk(el, level + 1, listCounters).trim()}`;
                       }
                       break;
                     case 'BR':
@@ -272,16 +170,21 @@ export default function DashboardPage() {
               });
 
               if (isList) {
-                listCounters.pop();
+                delete listCounters[level];
               }
+
               return text;
             }
 
-            const rawText = recursiveWalk(doc.body, 0, []);
-            // Final cleanup: consolidate multiple newlines
-            return rawText.replace(/\n\s*\n\s*\n/g, '\n\n').trim();
+            const rawText = recursiveWalk(doc.body, 0, {});
+            // Final cleanup: consolidate multiple newlines and trim each line
+            return rawText
+                .split('\n')
+                .map(line => line.trim())
+                .join('\n')
+                .replace(/\n{3,}/g, '\n\n') // Consolidate more than 2 newlines into 2
+                .trim();
         };
-
 
         const acceptanceCriteria = getTextFromRichField(data.fields["Microsoft.VSTS.Common.AcceptanceCriteria"]);
         const description = getTextFromRichField(data.fields["System.Description"]);
@@ -426,6 +329,7 @@ export default function DashboardPage() {
                     </TabsContent>
                     <TabsContent value="pbi" className="pt-6">
                         <PbiIdForm
+                            pbiId={pbiIdForPush}
                             isLoading={isPbiLoading}
                             isConfigMissing={isConfigMissing}
                             fetchedData={fetchedPbiData}
@@ -466,5 +370,3 @@ export default function DashboardPage() {
     </AppLayout>
   );
 }
-
-    
