@@ -33,10 +33,9 @@ El Generador de Casos de Prueba es una aplicación web construida con Next.js qu
 
 ## 2. Video Demostrativo
 
-Puedes ver una explicación completa y una demostración de la aplicación en el siguiente video:
+Puedes ver una explicación completa y una demostración de la aplicación en el siguiente video. Haz clic en la imagen para verlo:
 
-[**-> Ver video en YouTube aquí <-**](https://www.youtube.com/)
-*(Reemplaza este enlace con la URL de tu video)*
+[![Video Demostrativo](https://img.youtube.com/vi/blaE6c5PXmI/maxresdefault.jpg)](https://www.youtube.com/watch?v=blaE6c5PXmI)
 
 ## 3. Arquitectura de IA: ¿Local o en la Nube?
 
