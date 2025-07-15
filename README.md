@@ -3,25 +3,27 @@
 Este proyecto es una aplicación web que automatiza la creación de casos de prueba a partir de historias de usuario mediante inteligencia artificial, integrándose con Azure DevOps para la interacción con elementos de trabajo (Historias de usuario).
 
 
+
 Este documento proporciona una guía completa para configurar, y desplegar la aplicación Generador de Casos de Prueba en un servidor on-premise.
 
 ## Tabla de Contenidos
 1. [Descripción General](#1-descripción-general)
-2. [Arquitectura de IA: ¿Local o en la Nube?](#2-arquitectura-de-ia-local-o-en-la-nube)
-3. [Prerrequisitos](#3-prerrequisitos)
-4. [Configuración del Proyecto Firebase](#4-configuración-del-proyecto-firebase)
-5. [Configuración de Azure DevOps](#5-configuración-de-azure-devops)
-6. [Configuración de la Aplicación](#6-configuración-de-la-aplicación)
+2. [Video Demostrativo](#2-video-demostrativo)
+3. [Arquitectura de IA: ¿Local o en la Nube?](#3-arquitectura-de-ia-local-o-en-la-nube)
+4. [Prerrequisitos](#4-prerrequisitos)
+5. [Configuración del Proyecto Firebase](#5-configuración-del-proyecto-firebase)
+6. [Configuración de Azure DevOps](#6-configuración-de-azure-devops)
+7. [Configuración de la Aplicación](#7-configuración-de-la-aplicación)
     - [Variables de Entorno (`.env`)](#variables-de-entorno-env)
     - [Configuración del Proveedor de IA](#configuración-del-proveedor-de-ia)
-7. [Instalación](#7-instalación)
-8. [Compilar y Ejecutar para Producción](#8-compilar-y-ejecutar-para-producción)
+8. [Instalación](#8-instalación)
+9. [Compilar y Ejecutar para Producción](#9-compilar-y-ejecutar-para-producción)
     - [Compilar la Aplicación](#compilar-la-aplicación)
     - [Ejecutar la Aplicación](#ejecutar-la-aplicación)
     - [Usar un Gestor de Procesos (Recomendado)](#usar-un-gestor-de-procesos-recomendado)
-9. [Desarrollo](#9-desarrollo)
-10. [Pila Tecnológica](#10-pila-tecnológica)
-11. [Licencia](#11-licencia)
+10. [Desarrollo](#10-desarrollo)
+11. [Pila Tecnológica](#11-pila-tecnológica)
+12. [Licencia](#12-licencia)
 
 ---
 
@@ -29,7 +31,14 @@ Este documento proporciona una guía completa para configurar, y desplegar la ap
 
 El Generador de Casos de Prueba es una aplicación web construida con Next.js que utiliza IA para generar casos de prueba detallados a partir de historias de usuario. Se integra con Firebase para la autenticación de usuarios y el almacenamiento de datos, y con Azure DevOps para obtener elementos de trabajo y enviar los casos de prueba generados.
 
-## 2. Arquitectura de IA: ¿Local o en la Nube?
+## 2. Video Demostrativo
+
+Puedes ver una explicación completa y una demostración de la aplicación en el siguiente video:
+
+[**-> Ver video en YouTube aquí <-**](https://www.youtube.com/)
+*(Reemplaza este enlace con la URL de tu video)*
+
+## 3. Arquitectura de IA: ¿Local o en la Nube?
 
 Es importante aclarar que la aplicación **no ejecuta el modelo de Inteligencia Artificial en tu servidor local**. El modelo de IA (Gemini de Google) es un servicio que se consume desde la nube. La arquitectura funciona de la siguiente manera:
 
@@ -39,7 +48,7 @@ Es importante aclarar que la aplicación **no ejecuta el modelo de Inteligencia 
 
 Por lo tanto, el comando `npm run genkit:watch` inicia este conector local, no el modelo de IA en sí.
 
-## 3. Prerrequisitos
+## 4. Prerrequisitos
 
 Antes de comenzar, asegúrate de que tu servidor tenga el siguiente software instalado:
 - **Node.js**: Versión 20.x o posterior.
@@ -49,7 +58,7 @@ Antes de comenzar, asegúrate de que tu servidor tenga el siguiente software ins
 - **Cuenta de Azure DevOps**: Necesitas una cuenta con acceso a una organización y un proyecto donde se gestionan los elementos de trabajo.
 - **Cuenta de Google Cloud**: Necesitarás una cuenta para obtener las credenciales de la API de IA.
 
-## 4. Configuración del Proyecto Firebase
+## 5. Configuración del Proyecto Firebase
 
 Esta aplicación requiere un proyecto de Firebase para su funcionalidad principal.
 
@@ -82,7 +91,7 @@ Esta aplicación requiere un proyecto de Firebase para su funcionalidad principa
     - Dale un apodo y registra la aplicación.
     - Firebase te proporcionará un objeto `firebaseConfig`. Necesitarás estas claves para el archivo `.env`.
 
-## 5. Configuración de Azure DevOps
+## 6. Configuración de Azure DevOps
 
 Para conectarse a Azure DevOps, la aplicación necesita un Token de Acceso Personal (PAT).
 
@@ -94,7 +103,7 @@ Para conectarse a Azure DevOps, la aplicación necesita un Token de Acceso Perso
     - **Importante**: Copia el PAT generado inmediatamente. No podrás verlo de nuevo.
 2.  **Encontrar los Nombres de tu Organización y Proyecto**: Estos suelen ser parte de la URL cuando navegas por tu proyecto (ej., `https://dev.azure.com/{organization}/{project}`).
 
-## 6. Configuración de la Aplicación
+## 7. Configuración de la Aplicación
 
 ### Variables de Entorno (`.env`)
 
@@ -155,7 +164,7 @@ La aplicación utiliza **Google Gemini** para generar los casos de prueba.
     - Copia la clave generada.
     - En tu archivo `.env`, pega tu clave en `GOOGLE_API_KEY`.
 
-## 7. Instalación
+## 8. Instalación
 
 Sigue estos pasos en tu servidor para instalar las dependencias de la aplicación.
 
@@ -168,7 +177,7 @@ cd <carpeta-del-repositorio>
 npm install
 ```
 
-## 8. Compilar y Ejecutar para Producción
+## 9. Compilar y Ejecutar para Producción
 
 > **¡IMPORTANTE! Proceso de Compilación**
 > Antes de compilar, asegúrate de que tu archivo `.env` esté completamente configurado. Next.js **incrusta** las variables de entorno públicas (las que empiezan con `NEXT_PUBLIC_`) en el código de la aplicación durante el proceso de compilación (`npm run build`).
@@ -209,7 +218,7 @@ Para un despliegue on-premise real, deberías usar un gestor de procesos como **
     pm2 startup       # Configura PM2 para que se inicie al reiniciar el servidor
     ```
 
-## 9. Desarrollo
+## 10. Desarrollo
 
 Para ejecutar la aplicación en modo de desarrollo, la aplicación se divide en dos procesos de servidor independientes que necesitan ejecutarse al mismo tiempo:
 
@@ -223,7 +232,7 @@ Para ejecutar la aplicación en modo de desarrollo, la aplicación se divide en 
 
 Necesitarás dos terminales porque cada comando inicia un proceso que "ocupa" esa terminal para ejecutarse y mostrar sus registros.
 
-## 10. Pila Tecnológica
+## 11. Pila Tecnológica
 
 - **Framework**: Next.js
 - **UI (Interfaz de Usuario)**: React, ShadCN UI, Tailwind CSS
@@ -234,6 +243,6 @@ Necesitarás dos terminales porque cada comando inicia un proceso que "ocupa" es
 - **Estilos**: Tailwind CSS
 - **Manejo de Formularios**: React Hook Form, Zod
 
-## 11. Licencia
+## 12. Licencia
 
 Este proyecto se distribuye bajo la Licencia MIT. Consulta el archivo `LICENSE` para más detalles.
