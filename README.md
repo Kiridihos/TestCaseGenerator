@@ -1,5 +1,8 @@
 # Generador de Casos de Prueba: Guía de Despliegue On-Premise - By Diego Fino
 
+Este proyecto es una aplicación web que automatiza la creación de casos de prueba a partir de historias de usuario mediante inteligencia artificial, integrándose con Azure DevOps para la interacción con elementos de trabajo (Historias de usuario).
+
+
 Este documento proporciona una guía completa para configurar, y desplegar la aplicación Generador de Casos de Prueba en un servidor on-premise.
 
 ## Tabla de Contenidos
