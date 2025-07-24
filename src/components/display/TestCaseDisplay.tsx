@@ -110,7 +110,7 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
       const body = [
         { "op": "add", "path": "/fields/System.Title", "value": tc.title },
         { "op": "add", "path": "/fields/System.Description", "value": tc.description ? tc.description.replace(/\n/g, '<br />') : "" },
-        { "op": "add", "path": "/relations/-", "value": { "rel": "Microsoft.VSTS.Common.TestedBy-Forward", "url": `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/${pbiId}` } }
+        { "op": "add", "path": "/relations/-", "value": { "rel": "Microsoft.VSTS.Common.TestedBy-Reverse", "url": `https://dev.azure.com/${organization}/${project}/_apis/wit/workitems/${pbiId}` } }
       ];
 
       if (xmlSteps) {
@@ -386,5 +386,3 @@ export function TestCaseDisplay({ testCases, initialPbiId }: TestCaseDisplayProp
     </Card>
   );
 }
-
-    
